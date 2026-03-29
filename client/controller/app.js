@@ -331,6 +331,7 @@ goLiveBtn.addEventListener('click', () => {
     designId: state.selectedDesign.id,
     pageIndex: state.selectedPageIndex,
     imageUrl: state.preview.url,
+    viewUrl: state.selectedDesign.urls?.view_url,
   }));
 
   // Update "currently displaying" in the header

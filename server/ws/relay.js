@@ -60,6 +60,7 @@ function handleMessage(ws, role, message) {
       send(clients.display, {
         type: 'SHOW_SLIDE',
         imageUrl: message.imageUrl,
+        viewUrl: message.viewUrl,
         designId: message.designId,
         pageIndex: message.pageIndex,
         transition: message.transition ?? 'fade',

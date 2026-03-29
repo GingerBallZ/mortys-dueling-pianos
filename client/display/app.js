@@ -1,35 +1,18 @@
 'use strict';
 
-// --- Slide crossfade logic ---
-// We keep two <img> layers (A and B). The visible one is "active".
-// When a new slide arrives, we load it into the hidden layer, then swap.
-
-const slideA = document.getElementById('slide-a');
-const slideB = document.getElementById('slide-b');
+const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
-let activeSlide = slideA;   // the currently visible layer
-let inactiveSlide = slideB; // the hidden layer we load into
+// Build the Canva present embed URL for a given design view URL and page index
+function buildPresentUrl(viewUrl, pageIndex) {
+  // Strip everything from /view (or /edit) onward to get the base design URL
+  const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
+  return `${base}/present?embed&slide=${pageIndex + 1}`;
+}
 
-function showSlide(imageUrl) {
-  // Load the new image into the hidden layer
-  inactiveSlide.src = imageUrl;
-
-  inactiveSlide.onload = () => {
-    // Fade the new image in
-    inactiveSlide.classList.add('visible');
-    // Fade the old image out
-    activeSlide.classList.remove('visible');
-    // Hide status message once we have a slide
-    statusEl.classList.add('hidden');
-
-    // Swap roles for next transition
-    [activeSlide, inactiveSlide] = [inactiveSlide, activeSlide];
-  };
-
-  inactiveSlide.onerror = () => {
-    console.error('[display] Failed to load image:', imageUrl);
-  };
+function showSlide(viewUrl, pageIndex) {
+  frame.src = buildPresentUrl(viewUrl, pageIndex);
+  statusEl.classList.add('hidden');
 }
 
 // --- WebSocket connection ---
@@ -49,13 +32,8 @@ function connect() {
     statusEl.textContent = 'Connected — waiting for slide...';
     clearTimeout(reconnectTimer);
 
-    // Request fullscreen on first successful connection
-    // (must happen in response to a user gesture on some browsers,
-    //  but Fire TV Silk allows it on page load after the WS opens)
     if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {
-        // Silently ignore — fullscreen may require a user gesture
-      });
+      document.documentElement.requestFullscreen().catch(() => {});
     }
   });
 
@@ -70,10 +48,9 @@ function connect() {
 
     console.log('[display] Received:', message.type);
 
-    if (message.type === 'SHOW_SLIDE' && message.imageUrl) {
-      showSlide(message.imageUrl);
+    if (message.type === 'SHOW_SLIDE' && message.viewUrl) {
+      showSlide(message.viewUrl, message.pageIndex ?? 0);
 
-      // Acknowledge back to the server
       ws.send(JSON.stringify({
         type: 'ACK',
         status: 'displayed',
@@ -99,5 +76,4 @@ function scheduleReconnect() {
   reconnectTimer = setTimeout(connect, 3000);
 }
 
-// Kick off
 connect();
