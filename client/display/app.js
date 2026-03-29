@@ -7,7 +7,7 @@ const statusEl = document.getElementById('status');
 function buildPresentUrl(viewUrl, pageIndex) {
   // Strip everything from /view (or /edit) onward to get the base design URL
   const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/present?embed&slide=${pageIndex + 1}`;
+  return `${base}/watch?embed&slide=${pageIndex + 1}`;
 }
 
 function showSlide(viewUrl, pageIndex) {
