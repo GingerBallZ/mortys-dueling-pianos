@@ -1,0 +1,336 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #111;
+  color: #f0f0f0;
+  overflow: hidden;
+}
+
+/* ── Utilities ── */
+.hidden { display: none !important; }
+
+/* ── Header ── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+#header h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.current-slide {
+  font-size: 0.8rem;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.current-slide strong { color: #4caf50; }
+
+/* ── Status pills ── */
+.pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.pill--off  { background: #2a2a2a; color: #666; }
+.pill--on   { background: #1b3d1e; color: #4caf50; }
+.pill--warn { background: #3d2b0e; color: #f0a030; }
+
+/* ── Login screen ── */
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 60px);
+  gap: 20px;
+  color: #aaa;
+}
+
+/* ── Main layout ── */
+#main {
+  display: flex;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* ── Design section (left) ── */
+#design-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  border-right: 1px solid #2a2a2a;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.section-header h2 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Design grid ── */
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  align-content: start;
+}
+
+.placeholder { color: #555; font-size: 0.9rem; grid-column: 1/-1; }
+
+.design-card {
+  background: #1e1e1e;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  /* Minimum tap target */
+  min-height: 44px;
+}
+
+.design-card:active { transform: scale(0.97); }
+
+.design-card.selected {
+  border-color: #4a90e2;
+}
+
+.design-card__thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  background: #2a2a2a;
+  display: block;
+}
+
+.design-card__thumb--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #444;
+}
+
+.design-card__info {
+  padding: 8px 10px;
+}
+
+.design-card__name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.design-card__pages {
+  font-size: 0.7rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* ── Load more ── */
+.load-more-row {
+  padding: 12px 16px;
+  border-top: 1px solid #2a2a2a;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+/* ── Slide panel (right) ── */
+.slide-panel {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #161616;
+}
+
+.panel-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 24px;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  padding: 16px;
+  gap: 14px;
+}
+
+.panel-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Page buttons ── */
+.page-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-btn {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 2px solid #2a2a2a;
+  background: #1e1e1e;
+  color: #ccc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.page-btn:active { transform: scale(0.95); }
+
+.page-btn.selected {
+  border-color: #4a90e2;
+  background: #1a2e44;
+  color: #fff;
+}
+
+/* ── Preview ── */
+.preview-area {
+  flex: 1;
+  background: #0a0a0a;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.preview-loading,
+.preview-error {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.preview-error { color: #c0392b; }
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) { transform: scale(0.97); }
+
+.btn--secondary {
+  background: #2a2a2a;
+  color: #ccc;
+}
+
+.btn--live {
+  background: #e53935;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.btn--live:hover:not(:disabled) { background: #c62828; }
+
+.btn--go-live {
+  width: 100%;
+  font-size: 1rem;
+  padding: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Confirmation flash ── */
+.confirm-flash {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4caf50;
+  flex-shrink: 0;
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Morty's Dueling Pianos — Controller</title>
+  <link rel="stylesheet" href="/controller/style.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <div class="header-left">
+      <h1>Morty's Dueling Pianos</h1>
+      <div id="currently-displaying" class="current-slide hidden">
+        Live: <strong id="current-label">—</strong>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="display-status" class="pill pill--off">Display: —</span>
+      <span id="ws-status" class="pill pill--off">WS: —</span>
+    </div>
+  </header>
+
+  <!-- ── Login prompt (shown when not authenticated) ── -->
+  <div id="login-screen" class="login-screen hidden">
+    <p>Connect your Canva account to get started.</p>
+    <a href="/auth/login" class="btn btn--live">Connect Canva</a>
+  </div>
+
+  <!-- ── Main layout ── -->
+  <main id="main" class="hidden">
+
+    <!-- Left: design grid -->
+    <section id="design-section">
+      <div class="section-header">
+        <h2>Designs</h2>
+        <button id="refresh-btn" class="btn btn--secondary">Refresh</button>
+      </div>
+      <div id="design-grid" class="design-grid">
+        <p class="placeholder">Loading designs…</p>
+      </div>
+      <div id="load-more-row" class="load-more-row hidden">
+        <button id="load-more-btn" class="btn btn--secondary">Load more</button>
+      </div>
+    </section>
+
+    <!-- Right: slide panel -->
+    <aside id="slide-panel" class="slide-panel">
+      <div id="panel-empty" class="panel-empty">
+        <p>Tap a design to see its slides.</p>
+      </div>
+
+      <div id="panel-content" class="panel-content hidden">
+        <h2 id="panel-title" class="panel-title"></h2>
+
+        <!-- Page selector -->
+        <div id="page-buttons" class="page-buttons"></div>
+
+        <!-- Preview area -->
+        <div id="preview-area" class="preview-area">
+          <div id="preview-loading" class="preview-loading hidden">Loading preview…</div>
+          <div id="preview-error" class="preview-error hidden">Preview failed.</div>
+          <img id="preview-img" class="preview-img hidden" alt="Slide preview">
+        </div>
+
+        <!-- Go Live button -->
+        <button id="go-live-btn" class="btn btn--live btn--go-live" disabled>
+          Go Live
+        </button>
+
+        <!-- Confirmation flash -->
+        <div id="confirm-flash" class="confirm-flash hidden">✓ Sent to display</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <script src="/controller/app.js"></script>
+</body>
+</html>
