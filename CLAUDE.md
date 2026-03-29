@@ -72,6 +72,7 @@ No native apps. No app store. Just two browser tabs that stay in sync over a Web
 ### Required API Scopes
 ```
 design:content:read      # List and read user designs
+design:meta:read         # Required for listing designs (discovered during setup)
 asset:read               # Read assets/thumbnails
 ```
 
@@ -80,13 +81,18 @@ asset:read               # Read assets/thumbnails
 |---|---|
 | List user's designs | `GET /v1/designs` |
 | Get design details + pages | `GET /v1/designs/{designId}` |
-| Export/render a slide | `POST /v1/designs/{designId}/exports` |
+| Export/render a slide | `POST /v1/exports` (NOT `/designs/{id}/exports` — that endpoint no longer exists) |
 | Get export result | `GET /v1/exports/{exportId}` |
 
+### Export API Notes
+- Endpoint is `POST /v1/exports` with body `{ design_id, format: { type: 'png', pages: [N] } }`
+- Pages are **1-indexed**
+- Export result URLs are at `job.urls[0]` (not `job.result.urls[0]`)
+
 ### Slide Display Strategy
-- Export individual pages as PNG or JPG for display (most reliable for TV)
-- Or use Canva's shareable "present" link embedded in an iframe (simpler, but less control)
-- Pre-fetch and cache export URLs for the next 2–3 slides during a show to avoid latency
+- Controller previews use PNG exports (fast, reliable for browsing)
+- Display uses a Canva iframe (`/watch?embed&slide=N`) so animations play natively
+- Designs must be set to **"Anyone with the link can view"** in Canva for the iframe to load on the Fire TV (which is not authenticated with Canva)
 
 ---
 
@@ -162,10 +168,11 @@ CANVA_REFRESH_TOKEN=
 
 - Target screen resolution: **1920×1080**
 - Silk browser supports: ES6+, WebSockets, CSS Flexbox/Grid, full-screen API
-- Avoid: complex animations, heavy JS frameworks, Web Workers
+- Avoid: heavy JS frameworks, Web Workers
 - Use `document.documentElement.requestFullscreen()` on first user interaction
-- Display page should be **completely static** — no UI chrome, no cursor, black background
-- Test image transitions with CSS `opacity` transitions (most reliable on TV)
+- Display page should have no UI chrome, no cursor, black background
+- Display renders Canva slides via iframe (`/watch?embed`) — Canva handles all animations and transitions natively
+- Controller preview uses static PNG exports only — animations are not needed or expected there
 
 ---
 
@@ -227,20 +234,45 @@ http://127.0.0.1:3000/auth/callback
 
 ## MVP Checklist
 
-- [ ] OAuth login flow + token storage
-- [ ] `GET /v1/designs` → display thumbnail grid on controller
-- [ ] Export a design page as PNG → display on TV
-- [ ] WebSocket: controller sends SHOW_SLIDE → display renders it
-- [ ] "Go Live" button with confirmation feedback
-- [ ] Token auto-refresh
-- [ ] Fire TV full-screen mode
-- [ ] Basic fade transition between slides
-- [ ] Currently-displaying indicator on controller
+- [x] OAuth login flow + token storage
+- [x] `GET /v1/designs` → display thumbnail grid on controller
+- [x] Export a design page as PNG → display on TV
+- [x] WebSocket: controller sends SHOW_SLIDE → display renders it
+- [x] "Go Live" button with confirmation feedback
+- [x] Token auto-refresh
+- [x] Fire TV full-screen mode (triggered on WebSocket connect)
+- [x] Slide buttons scrollable when design has many pages
+- [x] Currently-displaying indicator on controller
+- [x] Deployed to Railway at `https://mortys-dueling-pianos-production.up.railway.app`
+- [x] Logout route (`/auth/logout`) clears tokens and redirects to login
 
 ---
 
-## Future Enhancements
+## Known Bugs
 
+### Canva animations not playing on display
+- **Status:** In progress
+- **What's happening:** The display iframe loads the correct Canva slide but entrance animations and slide transitions do not play.
+- **Attempted:** `/present?embed&slide=N` and `/watch?embed&slide=N` — both show the slide statically.
+- **Next to try:** Investigate whether Canva's embed mode suppresses animations by design, whether a different URL format exists, or whether a non-embed present URL is required (which may show Canva chrome/controls).
+
+---
+
+## Backlog
+
+### UI / Controller
+- [ ] Forward and Back nav arrows in the controller to advance or return to the next/previous slide without tapping individual slide buttons
+- [ ] Reduce vertical height of the Preview window; increase Slide Selection area accordingly
+- [ ] Change scrollbar color to be more visible against dark background
+- [ ] Make Preview image load faster (investigate pre-export on design select, or parallel export requests)
+
+### Display / Show Control
+- [ ] "End Show" button on controller: loads the "Waiting for controller..." screen on the display and exits fullscreen
+- [ ] On "Go Live": enter fullscreen on the display device and hide the browser navigation bar
+- [ ] On "Go Live": prevent display device screensaver / auto-screen-off from activating
+- [ ] On "End Show": re-enable screensaver / auto-screen-off
+
+### Future Enhancements
 - Auto-advance mode (timer-based slideshow)
 - Slide pre-caching for zero-latency transitions
 - Set list integration (map songs to specific slides)
