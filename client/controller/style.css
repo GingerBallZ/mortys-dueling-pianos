@@ -232,6 +232,9 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  overflow-y: auto;
+  max-height: 180px;
+  flex-shrink: 0;
 }
 
 .page-btn {
