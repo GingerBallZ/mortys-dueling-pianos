@@ -14,6 +14,7 @@ const server = http.createServer(app);
 
 // --- Middleware ---
 
+app.set('trust proxy', 1); // trust Railway's proxy for secure cookies
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
