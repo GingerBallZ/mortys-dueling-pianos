@@ -192,4 +192,5 @@ module.exports = {
   getValidAccessToken,
   canvaRequest,
   isAuthenticated,
+  clearTokens,
 };

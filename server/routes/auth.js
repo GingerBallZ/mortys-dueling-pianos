@@ -55,11 +55,10 @@ router.get('/status', (req, res) => {
 });
 
 // GET /auth/logout
-// Clears stored tokens
+// Clears stored tokens and redirects to login
 router.get('/logout', (req, res) => {
-  const { clearTokens } = require('../canva');
-  // clearTokens is not exported — just redirect since logout is rarely needed live
-  res.send('To re-authenticate, clear .tokens.json on the server and visit /auth/login.');
+  canva.clearTokens();
+  res.redirect('/auth/login');
 });
 
 module.exports = router;
