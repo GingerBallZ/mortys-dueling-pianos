@@ -4,9 +4,10 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
 function showSlide(embedUrl, pageIndex) {
-  // Append the slide number so Canva opens at the correct page.
-  // embedUrl already contains ?embed so we chain with &slide=N (1-indexed).
-  frame.src = `${embedUrl}&slide=${pageIndex + 1}`;
+  // The /view?embed path loads the presentation but ignores &slide=N.
+  // Swap to /watch?embed which is the path that supports slide-specific navigation.
+  const url = embedUrl.replace('/view?embed', '/watch?embed') + `&slide=${pageIndex + 1}`;
+  frame.src = url;
   statusEl.classList.add('hidden');
 }
 
