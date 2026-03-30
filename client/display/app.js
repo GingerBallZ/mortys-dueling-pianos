@@ -4,10 +4,9 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
 function showSlide(embedUrl, pageIndex) {
-  // The /view?embed path loads the presentation but ignores &slide=N.
-  // Swap to /watch?embed which is the path that supports slide-specific navigation.
-  const url = embedUrl.replace('/view?embed', '/watch?embed') + `&slide=${pageIndex + 1}`;
-  frame.src = url;
+  // Try hash-based navigation — some embed players read the hash client-side
+  // to jump to a specific slide without the parameter going to the server.
+  frame.src = `${embedUrl}#slide=${pageIndex + 1}`;
   statusEl.classList.add('hidden');
 }
 
