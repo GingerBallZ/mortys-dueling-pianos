@@ -12,7 +12,9 @@ function buildEmbedUrl(designId, pageIndex) {
 }
 
 function showSlide(designId, pageIndex) {
-  frame.src = buildEmbedUrl(designId, pageIndex);
+  const url = buildEmbedUrl(designId, pageIndex);
+  console.log('[display] Loading embed URL:', url);
+  frame.src = url;
   statusEl.classList.add('hidden');
 }
 
