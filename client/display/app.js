@@ -3,13 +3,14 @@
 const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
-// Build the Canva present URL for a given design view URL and page index.
-// We use /present (no ?embed) so that entrance animations and slide transitions
-// play natively. ?embed suppresses all animations by design.
+// Build the Canva embed URL for a given design view URL and page index.
+// We use /view?embed (Canva's own embed format) rather than /watch?embed —
+// /watch is a passive slideshow player that suppresses animations;
+// /view is the standard design viewer which may preserve entrance animations.
 function buildPresentUrl(viewUrl, pageIndex) {
   // Strip everything from /view (or /edit) onward to get the base design URL
   const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/present?slide=${pageIndex + 1}`;
+  return `${base}/view?embed&slide=${pageIndex + 1}`;
 }
 
 function showSlide(viewUrl, pageIndex) {
