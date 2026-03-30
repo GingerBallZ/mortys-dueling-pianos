@@ -3,19 +3,16 @@
 const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
-// Build the Canva embed URL for a given design view URL and page index.
-// Must use /watch?embed — Canva's CSP blocks /present from being iframed,
-// and /view?embed returns 403. The ?embed parameter is required for anonymous
-// viewing; without it Canva requires the viewer to be logged in.
-// Known limitation: Canva's embed mode suppresses entrance animations.
-function buildPresentUrl(viewUrl, pageIndex) {
-  // Strip everything from /view (or /edit) onward to get the base design URL
-  const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/watch?embed&slide=${pageIndex + 1}`;
+// Build the Canva embed URL from a stable designId.
+// We use the public /design/{id} URL format rather than the view_url from the
+// API, which is a signed JWT that expires. This requires the design to be set
+// to "Anyone with the link can view" in Canva.
+function buildEmbedUrl(designId, pageIndex) {
+  return `https://www.canva.com/design/${designId}/watch?embed&slide=${pageIndex + 1}`;
 }
 
-function showSlide(viewUrl, pageIndex) {
-  frame.src = buildPresentUrl(viewUrl, pageIndex);
+function showSlide(designId, pageIndex) {
+  frame.src = buildEmbedUrl(designId, pageIndex);
   statusEl.classList.add('hidden');
 }
 
@@ -52,8 +49,8 @@ function connect() {
 
     console.log('[display] Received:', message.type);
 
-    if (message.type === 'SHOW_SLIDE' && message.viewUrl) {
-      showSlide(message.viewUrl, message.pageIndex ?? 0);
+    if (message.type === 'SHOW_SLIDE' && message.designId) {
+      showSlide(message.designId, message.pageIndex ?? 0);
 
       ws.send(JSON.stringify({
         type: 'ACK',
