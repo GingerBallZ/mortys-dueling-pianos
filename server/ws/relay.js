@@ -62,6 +62,9 @@ function handleMessage(ws, role, message) {
         embedUrl: message.embedUrl,
         designId: message.designId,
         pageIndex: message.pageIndex,
+        pageCount: message.pageCount,
+        autoAdvance: message.autoAdvance ?? false,
+        duration: message.duration ?? 5,
       });
       break;
     }

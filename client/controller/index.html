@@ -70,6 +70,18 @@
           <img id="preview-img" class="preview-img hidden" alt="Slide preview">
         </div>
 
+        <!-- Auto-advance settings -->
+        <div class="auto-advance-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="auto-advance-toggle">
+            <span>Auto-advance</span>
+          </label>
+          <div id="duration-row" class="duration-row hidden">
+            <input type="number" id="slide-duration" class="duration-input" value="5" min="1" max="120">
+            <span class="duration-unit">sec / slide</span>
+          </div>
+        </div>
+
         <!-- Go Live button -->
         <button id="go-live-btn" class="btn btn--live btn--go-live" disabled>
           Go Live

@@ -13,13 +13,16 @@ html, body {
 }
 
 /* Canva presentation iframe — full screen, no border.
+   Height extends 100px past the bottom of the screen to push Canva's
+   navigation bar below the fold (body overflow: hidden clips it).
    pointer-events: none prevents the Fire TV remote from accidentally
    advancing slides via click/D-pad interaction with Canva's UI. */
 .slide-frame {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 100px);
   border: none;
   background: #000;
   pointer-events: none;

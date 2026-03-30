@@ -15,6 +15,8 @@ const state = {
   ws: null,
   wsConnected: false,
   displayConnected: false,
+  autoAdvance: false,
+  slideDuration: 5,
 };
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -31,6 +33,9 @@ const panelTitle      = document.getElementById('panel-title');
 const embedSection    = document.getElementById('embed-section');
 const embedMsg        = document.getElementById('embed-msg');
 const setEmbedBtn     = document.getElementById('set-embed-btn');
+const autoAdvanceToggle = document.getElementById('auto-advance-toggle');
+const durationRow       = document.getElementById('duration-row');
+const slideDurationInput = document.getElementById('slide-duration');
 const embedModal      = document.getElementById('embed-modal');
 const embedInput      = document.getElementById('embed-input');
 const embedSaveBtn    = document.getElementById('embed-save-btn');
@@ -336,7 +341,10 @@ goLiveBtn.addEventListener('click', () => {
     type: 'SHOW_SLIDE',
     designId: state.selectedDesign.id,
     pageIndex: state.selectedPageIndex,
+    pageCount: state.selectedDesign.page_count ?? 1,
     embedUrl: state.selectedDesign.embedUrl,
+    autoAdvance: state.autoAdvance,
+    duration: state.slideDuration,
   }));
 
   const label = `${state.selectedDesign.title ?? 'Untitled'} — Slide ${state.selectedPageIndex + 1}`;
@@ -431,6 +439,19 @@ function showConfirmFlash() {
   confirmFlash.classList.remove('hidden');
   setTimeout(() => confirmFlash.classList.add('hidden'), 2500);
 }
+
+// ─── Auto-advance controls ────────────────────────────────────────────────────
+
+autoAdvanceToggle.addEventListener('change', () => {
+  state.autoAdvance = autoAdvanceToggle.checked;
+  durationRow.classList.toggle('hidden', !state.autoAdvance);
+});
+
+slideDurationInput.addEventListener('change', () => {
+  const val = parseInt(slideDurationInput.value, 10);
+  state.slideDuration = isNaN(val) || val < 1 ? 5 : Math.min(val, 120);
+  slideDurationInput.value = state.slideDuration;
+});
 
 // ─── Load more / Refresh ──────────────────────────────────────────────────────
 
