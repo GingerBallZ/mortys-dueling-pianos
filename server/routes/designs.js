@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const canva = require('../canva');
+const embedTokens = require('../embed-tokens');
 
 // Middleware: require authentication for all design routes
 router.use((req, res, next) => {
@@ -13,7 +14,7 @@ router.use((req, res, next) => {
 });
 
 // GET /api/designs
-// Lists the user's Canva designs (paginated)
+// Lists the user's Canva designs (paginated), with stored embed URLs merged in
 router.get('/', async (req, res) => {
   try {
     const { continuation } = req.query;
@@ -21,48 +22,21 @@ router.get('/', async (req, res) => {
       ? `/designs?continuation=${encodeURIComponent(continuation)}`
       : '/designs';
     const data = await canva.canvaRequest('GET', endpoint);
+
+    // Attach stored embed URL to each design item
+    const tokens = embedTokens.load();
+    if (data.items) {
+      data.items = data.items.map(design => ({
+        ...design,
+        embedUrl: tokens[design.id]
+          ? `https://www.canva.com/design/${design.id}/${tokens[design.id]}/view?embed`
+          : null,
+      }));
+    }
+
     res.json(data);
   } catch (err) {
     console.error('[designs] List error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/designs/:designId/debug
-// Temporary: follows the view_url redirect server-side to find the canonical public share URL.
-// The public share URL contains the viewToken needed for iframe embedding.
-router.get('/:designId/debug', async (req, res) => {
-  try {
-    const data = await canva.canvaRequest('GET', `/designs/${req.params.designId}`);
-    const viewUrl = data.design?.urls?.view_url ?? null;
-    const results = { viewUrl, withAuth: null, withoutAuth: null };
-
-    if (viewUrl) {
-      const token = await canva.getValidAccessToken();
-
-      // Test 1: follow redirects with Bearer token — see final URL
-      try {
-        const r = await fetch(viewUrl, {
-          headers: { Authorization: `Bearer ${token}` },
-          redirect: 'follow',
-        });
-        results.withAuth = { status: r.status, finalUrl: r.url };
-      } catch (e) {
-        results.withAuth = { error: e.message };
-      }
-
-      // Test 2: follow redirects anonymously — see final URL
-      try {
-        const r = await fetch(viewUrl, { redirect: 'follow' });
-        results.withoutAuth = { status: r.status, finalUrl: r.url };
-      } catch (e) {
-        results.withoutAuth = { error: e.message };
-      }
-    }
-
-    res.json(results);
-  } catch (err) {
-    console.error('[designs] Debug error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -90,6 +64,26 @@ router.get('/:designId', async (req, res) => {
     console.error('[designs] Get error:', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/designs/:designId/embed-token
+// Saves the Canva public view token for a design so the display can iframe it.
+// Body: { embedUrl: string } — accepts the full embed URL or the raw iframe HTML from Canva's Share → Embed dialog
+router.post('/:designId/embed-token', (req, res) => {
+  const { embedUrl } = req.body;
+  if (!embedUrl) {
+    return res.status(400).json({ error: 'embedUrl is required.' });
+  }
+
+  const viewToken = embedTokens.extractViewToken(embedUrl);
+  if (!viewToken) {
+    return res.status(400).json({ error: 'Could not find a Canva view token. Make sure you\'re pasting from Share → Embed in Canva.' });
+  }
+
+  embedTokens.save(req.params.designId, viewToken);
+
+  const fullEmbedUrl = `https://www.canva.com/design/${req.params.designId}/${viewToken}/view?embed`;
+  res.json({ embedUrl: fullEmbedUrl });
 });
 
 // POST /api/designs/:designId/export

@@ -59,11 +59,9 @@ function handleMessage(ws, role, message) {
       if (role !== 'controller') break;
       send(clients.display, {
         type: 'SHOW_SLIDE',
-        imageUrl: message.imageUrl,
-        viewUrl: message.viewUrl,
+        embedUrl: message.embedUrl,
         designId: message.designId,
         pageIndex: message.pageIndex,
-        transition: message.transition ?? 'fade',
       });
       break;
     }

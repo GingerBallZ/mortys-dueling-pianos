@@ -3,19 +3,10 @@
 const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
-// Build the Canva embed URL from the view_url returned by the API.
-// The API returns a signed JWT URL (/api/design/{jwt}/...) which Canva permits
-// in iframes. The public /design/{id} URL works in browser tabs but Canva
-// sets stricter iframe headers on it and it 403s when embedded.
-function buildEmbedUrl(viewUrl, pageIndex) {
-  const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/view?embed&meta`;
-}
-
-function showSlide(viewUrl, pageIndex) {
-  const url = buildEmbedUrl(viewUrl, pageIndex);
-  console.log('[display] Loading embed URL:', url);
-  frame.src = url;
+function showSlide(embedUrl, pageIndex) {
+  // Append the slide number so Canva opens at the correct page.
+  // embedUrl already contains ?embed so we chain with &slide=N (1-indexed).
+  frame.src = `${embedUrl}&slide=${pageIndex + 1}`;
   statusEl.classList.add('hidden');
 }
 
@@ -52,8 +43,8 @@ function connect() {
 
     console.log('[display] Received:', message.type);
 
-    if (message.type === 'SHOW_SLIDE' && message.viewUrl) {
-      showSlide(message.viewUrl, message.pageIndex ?? 0);
+    if (message.type === 'SHOW_SLIDE' && message.embedUrl) {
+      showSlide(message.embedUrl, message.pageIndex ?? 0);
 
       ws.send(JSON.stringify({
         type: 'ACK',

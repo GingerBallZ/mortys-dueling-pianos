@@ -9,11 +9,9 @@ const state = {
   selectedPageIndex: null,
   preview: {
     url: null,              // final image URL once export is done
-    loading: false,
-    error: false,
     pollTimer: null,        // setInterval handle for export polling
   },
-  currentlyDisplaying: null, // { title, pageIndex }
+  currentlyDisplaying: null, // { label }
   ws: null,
   wsConnected: false,
   displayConnected: false,
@@ -30,6 +28,14 @@ const refreshBtn      = document.getElementById('refresh-btn');
 const panelEmpty      = document.getElementById('panel-empty');
 const panelContent    = document.getElementById('panel-content');
 const panelTitle      = document.getElementById('panel-title');
+const embedSection    = document.getElementById('embed-section');
+const embedMsg        = document.getElementById('embed-msg');
+const setEmbedBtn     = document.getElementById('set-embed-btn');
+const embedModal      = document.getElementById('embed-modal');
+const embedInput      = document.getElementById('embed-input');
+const embedSaveBtn    = document.getElementById('embed-save-btn');
+const embedCancelBtn  = document.getElementById('embed-cancel-btn');
+const embedError      = document.getElementById('embed-error');
 const pageButtons     = document.getElementById('page-buttons');
 const previewArea     = document.getElementById('preview-area');
 const previewLoading  = document.getElementById('preview-loading');
@@ -72,13 +78,15 @@ function connectWebSocket() {
   state.ws.addEventListener('open', () => {
     state.wsConnected = true;
     updateStatusPills();
+    updateGoLiveBtn();
   });
 
   state.ws.addEventListener('close', () => {
     state.wsConnected = false;
     state.displayConnected = false;
     updateStatusPills();
-    setTimeout(connectWebSocket, 3000); // auto-reconnect
+    updateGoLiveBtn();
+    setTimeout(connectWebSocket, 3000);
   });
 
   state.ws.addEventListener('error', (err) => {
@@ -157,12 +165,7 @@ function renderDesignGrid() {
     designGrid.appendChild(card);
   }
 
-  // Show "Load more" if there's a pagination cursor
-  if (state.continuation) {
-    loadMoreRow.classList.remove('hidden');
-  } else {
-    loadMoreRow.classList.add('hidden');
-  }
+  loadMoreRow.classList.toggle('hidden', !state.continuation);
 }
 
 function buildDesignCard(design) {
@@ -173,6 +176,7 @@ function buildDesignCard(design) {
 
   const thumbUrl = design.thumbnail?.url;
   const pageCount = design.page_count ?? 1;
+  const dotClass = design.embedUrl ? 'embed-dot--ready' : 'embed-dot--missing';
 
   card.innerHTML = `
     ${thumbUrl
@@ -181,7 +185,7 @@ function buildDesignCard(design) {
     }
     <div class="design-card__info">
       <div class="design-card__name">${escapeHtml(design.title ?? 'Untitled')}</div>
-      <div class="design-card__pages">${pageCount} page${pageCount !== 1 ? 's' : ''}</div>
+      <div class="design-card__pages">${pageCount} page${pageCount !== 1 ? 's' : ''}<span class="embed-dot ${dotClass}"></span></div>
     </div>
   `;
 
@@ -196,7 +200,6 @@ function selectDesign(design) {
   state.selectedPageIndex = null;
   cancelPreview();
 
-  // Update selected highlight in grid
   document.querySelectorAll('.design-card').forEach(c => {
     c.classList.toggle('selected', c.dataset.id === design.id);
   });
@@ -205,6 +208,7 @@ function selectDesign(design) {
   panelContent.classList.remove('hidden');
 
   panelTitle.textContent = design.title ?? 'Untitled';
+  renderEmbedStatus(design);
 
   // Build page buttons
   const pageCount = design.page_count ?? 1;
@@ -217,21 +221,18 @@ function selectDesign(design) {
     pageButtons.appendChild(btn);
   }
 
-  // Reset preview
   setPreviewState('empty');
-  goLiveBtn.disabled = true;
   confirmFlash.classList.add('hidden');
+  updateGoLiveBtn();
 }
 
 function selectPage(pageIndex) {
   state.selectedPageIndex = pageIndex;
 
-  // Update page button highlights
   document.querySelectorAll('.page-btn').forEach((btn, i) => {
     btn.classList.toggle('selected', i === pageIndex);
   });
 
-  goLiveBtn.disabled = true;
   confirmFlash.classList.add('hidden');
   startExportPreview(pageIndex);
 }
@@ -239,8 +240,9 @@ function selectPage(pageIndex) {
 // ─── Export & preview ─────────────────────────────────────────────────────────
 
 async function startExportPreview(pageIndex) {
-  cancelPreview(); // stop any previous poll
+  cancelPreview();
   setPreviewState('loading');
+  updateGoLiveBtn();
 
   try {
     const res = await fetch(`/api/designs/${state.selectedDesign.id}/export`, {
@@ -262,9 +264,7 @@ async function startExportPreview(pageIndex) {
 }
 
 function pollExport(exportId, pageIndex) {
-  // Poll every 1.5 seconds until the export is done
   state.preview.pollTimer = setInterval(async () => {
-    // Bail out if the user has moved to a different page while polling
     if (state.selectedPageIndex !== pageIndex) {
       cancelPreview();
       return;
@@ -284,7 +284,7 @@ function pollExport(exportId, pageIndex) {
         if (!url) throw new Error('No URL in export result.');
         state.preview.url = url;
         setPreviewState('ready', url);
-        goLiveBtn.disabled = false;
+        updateGoLiveBtn();
       } else if (job.status === 'failed') {
         cancelPreview();
         setPreviewState('error');
@@ -323,24 +323,107 @@ function setPreviewState(mode, url = null) {
 
 // ─── Go Live ──────────────────────────────────────────────────────────────────
 
+function updateGoLiveBtn() {
+  goLiveBtn.disabled = !state.preview.url
+    || !state.selectedDesign?.embedUrl
+    || !state.wsConnected;
+}
+
 goLiveBtn.addEventListener('click', () => {
-  if (!state.preview.url || !state.ws || !state.wsConnected) return;
+  if (!state.preview.url || !state.selectedDesign?.embedUrl || !state.ws || !state.wsConnected) return;
 
   state.ws.send(JSON.stringify({
     type: 'SHOW_SLIDE',
     designId: state.selectedDesign.id,
     pageIndex: state.selectedPageIndex,
-    imageUrl: state.preview.url,
-    viewUrl: state.selectedDesign.urls?.view_url,
+    embedUrl: state.selectedDesign.embedUrl,
   }));
 
-  // Update "currently displaying" in the header
   const label = `${state.selectedDesign.title ?? 'Untitled'} — Slide ${state.selectedPageIndex + 1}`;
   currentLabel.textContent = label;
   currentlyDisp.classList.remove('hidden');
-
   state.currentlyDisplaying = { label };
 });
+
+// ─── Embed URL setup ──────────────────────────────────────────────────────────
+
+function renderEmbedStatus(design) {
+  if (design.embedUrl) {
+    embedMsg.textContent = 'Embed configured';
+    embedMsg.className = 'embed-msg configured';
+    setEmbedBtn.textContent = 'Change';
+  } else {
+    embedMsg.textContent = 'No embed URL — display will not work';
+    embedMsg.className = 'embed-msg missing';
+    setEmbedBtn.textContent = 'Set embed URL';
+  }
+}
+
+setEmbedBtn.addEventListener('click', () => {
+  embedInput.value = '';
+  embedError.textContent = '';
+  embedError.classList.add('hidden');
+  embedModal.classList.remove('hidden');
+  embedInput.focus();
+});
+
+embedCancelBtn.addEventListener('click', closeEmbedModal);
+
+embedModal.addEventListener('click', (e) => {
+  if (e.target === embedModal) closeEmbedModal();
+});
+
+embedSaveBtn.addEventListener('click', saveEmbedUrl);
+
+embedInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEmbedUrl();
+});
+
+function closeEmbedModal() {
+  embedModal.classList.add('hidden');
+}
+
+async function saveEmbedUrl() {
+  const input = embedInput.value.trim();
+  if (!input) return;
+
+  embedError.classList.add('hidden');
+  embedSaveBtn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/designs/${state.selectedDesign.id}/embed-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embedUrl: input }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Update in-memory state for the selected design and the grid list
+    state.selectedDesign.embedUrl = data.embedUrl;
+    const inList = state.designs.find(d => d.id === state.selectedDesign.id);
+    if (inList) inList.embedUrl = data.embedUrl;
+
+    // Update card dot
+    const card = document.querySelector(`.design-card[data-id="${state.selectedDesign.id}"]`);
+    if (card) {
+      const dot = card.querySelector('.embed-dot');
+      if (dot) {
+        dot.classList.remove('embed-dot--missing');
+        dot.classList.add('embed-dot--ready');
+      }
+    }
+
+    closeEmbedModal();
+    renderEmbedStatus(state.selectedDesign);
+    updateGoLiveBtn();
+  } catch (err) {
+    embedError.textContent = err.message;
+    embedError.classList.remove('hidden');
+  } finally {
+    embedSaveBtn.disabled = false;
+  }
+}
 
 // ─── Confirm flash ────────────────────────────────────────────────────────────
 

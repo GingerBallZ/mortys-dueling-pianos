@@ -54,6 +54,12 @@
       <div id="panel-content" class="panel-content hidden">
         <h2 id="panel-title" class="panel-title"></h2>
 
+        <!-- Embed URL status -->
+        <div id="embed-section" class="embed-section">
+          <span id="embed-msg" class="embed-msg"></span>
+          <button id="set-embed-btn" class="btn btn--secondary btn--sm">Set embed URL</button>
+        </div>
+
         <!-- Page selector -->
         <div id="page-buttons" class="page-buttons"></div>
 
@@ -75,6 +81,20 @@
     </aside>
 
   </main>
+
+  <!-- ── Embed URL modal ── -->
+  <div id="embed-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Set Embed URL</h3>
+      <p class="modal-hint">In Canva: open this design → Share → scroll down to Embed → copy the URL or paste the full iframe code.</p>
+      <textarea id="embed-input" class="embed-input" placeholder="Paste Canva embed URL or iframe code here…"></textarea>
+      <div id="embed-error" class="embed-error hidden"></div>
+      <div class="modal-actions">
+        <button id="embed-cancel-btn" class="btn btn--secondary">Cancel</button>
+        <button id="embed-save-btn" class="btn btn--live">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/controller/app.js"></script>
 </body>
