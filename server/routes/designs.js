@@ -29,33 +29,38 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/designs/:designId/debug
-// Temporary: returns raw Canva API design data and attempts to decode the view_url JWT
-// to find the public view token needed for iframe embedding.
+// Temporary: follows the view_url redirect server-side to find the canonical public share URL.
+// The public share URL contains the viewToken needed for iframe embedding.
 router.get('/:designId/debug', async (req, res) => {
   try {
     const data = await canva.canvaRequest('GET', `/designs/${req.params.designId}`);
-    const viewUrl = data.design?.urls?.view_url ?? data.urls?.view_url ?? null;
-    let decodedJwt = null;
+    const viewUrl = data.design?.urls?.view_url ?? null;
+    const results = { viewUrl, withAuth: null, withoutAuth: null };
 
     if (viewUrl) {
+      const token = await canva.getValidAccessToken();
+
+      // Test 1: follow redirects with Bearer token — see final URL
       try {
-        // view_url format: https://www.canva.com/api/design/{jwt}/watch?...
-        // Extract the JWT from the path segment after /api/design/
-        const match = viewUrl.match(/\/api\/design\/([^/]+)\//);
-        if (match) {
-          const jwtToken = match[1];
-          const parts = jwtToken.split('.');
-          if (parts.length === 3) {
-            const payload = Buffer.from(parts[1], 'base64url').toString('utf8');
-            decodedJwt = JSON.parse(payload);
-          }
-        }
+        const r = await fetch(viewUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: 'follow',
+        });
+        results.withAuth = { status: r.status, finalUrl: r.url };
       } catch (e) {
-        decodedJwt = { decodeError: e.message };
+        results.withAuth = { error: e.message };
+      }
+
+      // Test 2: follow redirects anonymously — see final URL
+      try {
+        const r = await fetch(viewUrl, { redirect: 'follow' });
+        results.withoutAuth = { status: r.status, finalUrl: r.url };
+      } catch (e) {
+        results.withoutAuth = { error: e.message };
       }
     }
 
-    res.json({ raw: data, viewUrl, decodedJwt });
+    res.json(results);
   } catch (err) {
     console.error('[designs] Debug error:', err.message);
     res.status(500).json({ error: err.message });
