@@ -12,7 +12,9 @@ html, body {
   cursor: none;
 }
 
-/* Canva presentation iframe — full screen, no border */
+/* Canva presentation iframe — full screen, no border.
+   pointer-events: none prevents the Fire TV remote from accidentally
+   advancing slides via click/D-pad interaction with Canva's UI. */
 .slide-frame {
   position: fixed;
   inset: 0;
@@ -20,6 +22,7 @@ html, body {
   height: 100%;
   border: none;
   background: #000;
+  pointer-events: none;
 }
 
 /* Status message shown when no slide is active */
