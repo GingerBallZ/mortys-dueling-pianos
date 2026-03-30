@@ -91,7 +91,7 @@ asset:read               # Read assets/thumbnails
 
 ### Slide Display Strategy
 - Controller previews use PNG exports (fast, reliable for browsing)
-- Display uses a Canva iframe (`/watch?embed&slide=N`) so animations play natively
+- Display uses a Canva iframe — working URL format TBD (see Known Bugs)
 - Designs must be set to **"Anyone with the link can view"** in Canva for the iframe to load on the Fire TV (which is not authenticated with Canva)
 
 ---
@@ -171,7 +171,7 @@ CANVA_REFRESH_TOKEN=
 - Avoid: heavy JS frameworks, Web Workers
 - Use `document.documentElement.requestFullscreen()` on first user interaction
 - Display page should have no UI chrome, no cursor, black background
-- Display renders Canva slides via iframe (`/watch?embed`) — Canva handles all animations and transitions natively
+- Display renders Canva slides via iframe — exact working URL format is under investigation (see Known Bugs)
 - Controller preview uses static PNG exports only — animations are not needed or expected there
 
 ---
@@ -250,14 +250,24 @@ http://127.0.0.1:3000/auth/callback
 
 ## Known Bugs
 
-### Canva animations not playing on display
-- **Status:** Closed — not possible with Canva's current embed API
-- **What's happening:** The display iframe loads the correct Canva slide but entrance animations and slide transitions do not play.
-- **Root cause:** Canva's `?embed` parameter (required for anonymous iframing) suppresses presentation animations by design. All alternatives are blocked:
-  - `/present?slide=N` — Canva's CSP (`frame-ancestors`) blocks it from being iframed entirely
-  - `/view?embed&slide=N` — returns 403 Forbidden for anonymous viewers
-  - `/watch?embed&slide=N` — only working option, but animations are suppressed
-- **Resolution:** Staying on `/watch?embed&slide=N`. Animations would require Canva to expose a presentation-mode embed URL, which they currently do not.
+### Display iframe not loading — 403 Forbidden from Canva
+- **Status:** In progress
+- **Background:** Display was previously working (showing static slides via `/watch?embed&slide=N` JWT URL). After a Canva re-authentication, the display started returning 403 on all URL formats.
+- **What we've learned:**
+  - The `view_url` from Canva's `GET /v1/designs` API response is a signed JWT URL in the format `https://www.canva.com/api/design/{jwt}/...`. This is NOT a stable public URL — it appears to be tied to the OAuth session and breaks after re-authentication.
+  - `/present?slide=N` — Canva's CSP (`frame-ancestors`) hard-blocks this from being iframed at all.
+  - `/view?embed&slide=N` (public URL) — 403 in iframe, but loads fine in a browser tab directly.
+  - `/view?embed&meta` (Canva's documented embed format, no slide param) — also 403 in iframe.
+  - `/watch?embed&slide=N` (public URL) — loads fine in a browser tab directly, but 403 in iframe.
+  - Canva's `?embed` mode suppresses presentation animations by design regardless of URL format.
+  - The public design URL format is `https://www.canva.com/design/{designId}/...` — the `designId` from the API (e.g. `DAHFXdhgJvE`) IS the correct public ID.
+  - The design is confirmed set to "Anyone with the link can view" in Canva.
+- **Current code state:** `display/app.js` uses `viewUrl` from the WS message to build the embed URL. The `buildEmbedUrl` function strips to the base and appends `/view?embed&meta`. This 403s.
+- **Next steps to try:**
+  1. **Get Canva's actual embed code** — open the design in Canva → Share → "See all" → Embed → copy the iframe src. Use that exact URL in the display to confirm what format Canva's own embed dialog generates and whether it loads.
+  2. **Test the iframe sandbox** — check if adding or removing `sandbox` / `allow` attributes on the iframe affects the 403.
+  3. **Switch display to PNG export** — abandon the iframe approach entirely. When Go Live is pressed, the server could re-export the selected slide as PNG and send the URL to the display. No animations, but guaranteed to work. This is the most reliable fallback.
+  4. **Investigate Canva Connect SDK** — Canva's developer platform may have an official embed SDK with more control than raw URL iframing.
 
 ---
 
