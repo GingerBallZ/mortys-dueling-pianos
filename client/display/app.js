@@ -4,9 +4,8 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
 function showSlide(embedUrl, pageIndex) {
-  // Try hash-based navigation — some embed players read the hash client-side
-  // to jump to a specific slide without the parameter going to the server.
-  frame.src = `${embedUrl}#slide=${pageIndex + 1}`;
+  // Canva's slide navigation uses a bare hash number: view?embed#5 = slide 5.
+  frame.src = `${embedUrl}#${pageIndex + 1}`;
   statusEl.classList.add('hidden');
 }
 
