@@ -9,7 +9,7 @@ const statusEl = document.getElementById('status');
 // sets stricter iframe headers on it and it 403s when embedded.
 function buildEmbedUrl(viewUrl, pageIndex) {
   const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/watch?embed&slide=${pageIndex + 1}`;
+  return `${base}/view?embed&meta`;
 }
 
 function showSlide(viewUrl, pageIndex) {
