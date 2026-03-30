@@ -4,13 +4,14 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 
 // Build the Canva embed URL for a given design view URL and page index.
-// We use /view?embed (Canva's own embed format) rather than /watch?embed —
-// /watch is a passive slideshow player that suppresses animations;
-// /view is the standard design viewer which may preserve entrance animations.
+// Must use /watch?embed — Canva's CSP blocks /present from being iframed,
+// and /view?embed returns 403. The ?embed parameter is required for anonymous
+// viewing; without it Canva requires the viewer to be logged in.
+// Known limitation: Canva's embed mode suppresses entrance animations.
 function buildPresentUrl(viewUrl, pageIndex) {
   // Strip everything from /view (or /edit) onward to get the base design URL
   const base = viewUrl.replace(/\/(view|edit|watch|present).*$/, '');
-  return `${base}/view?embed&slide=${pageIndex + 1}`;
+  return `${base}/watch?embed&slide=${pageIndex + 1}`;
 }
 
 function showSlide(viewUrl, pageIndex) {
