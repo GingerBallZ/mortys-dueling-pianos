@@ -28,6 +28,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/designs/:designId/debug
+// Temporary: returns raw Canva API design data and attempts to decode the view_url JWT
+// to find the public view token needed for iframe embedding.
+router.get('/:designId/debug', async (req, res) => {
+  try {
+    const data = await canva.canvaRequest('GET', `/designs/${req.params.designId}`);
+    const viewUrl = data.design?.urls?.view_url ?? data.urls?.view_url ?? null;
+    let decodedJwt = null;
+
+    if (viewUrl) {
+      try {
+        // view_url format: https://www.canva.com/api/design/{jwt}/watch?...
+        // Extract the JWT from the path segment after /api/design/
+        const match = viewUrl.match(/\/api\/design\/([^/]+)\//);
+        if (match) {
+          const jwtToken = match[1];
+          const parts = jwtToken.split('.');
+          if (parts.length === 3) {
+            const payload = Buffer.from(parts[1], 'base64url').toString('utf8');
+            decodedJwt = JSON.parse(payload);
+          }
+        }
+      } catch (e) {
+        decodedJwt = { decodeError: e.message };
+      }
+    }
+
+    res.json({ raw: data, viewUrl, decodedJwt });
+  } catch (err) {
+    console.error('[designs] Debug error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/designs/exports/:exportId
 // Polls the status of an export job
 // IMPORTANT: must be defined before /:designId to avoid route shadowing
