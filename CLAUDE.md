@@ -251,10 +251,13 @@ http://127.0.0.1:3000/auth/callback
 ## Known Bugs
 
 ### Canva animations not playing on display
-- **Status:** In progress
+- **Status:** Closed — not possible with Canva's current embed API
 - **What's happening:** The display iframe loads the correct Canva slide but entrance animations and slide transitions do not play.
-- **Attempted:** `/present?embed&slide=N` and `/watch?embed&slide=N` — both show the slide statically.
-- **Next to try:** Investigate whether Canva's embed mode suppresses animations by design, whether a different URL format exists, or whether a non-embed present URL is required (which may show Canva chrome/controls).
+- **Root cause:** Canva's `?embed` parameter (required for anonymous iframing) suppresses presentation animations by design. All alternatives are blocked:
+  - `/present?slide=N` — Canva's CSP (`frame-ancestors`) blocks it from being iframed entirely
+  - `/view?embed&slide=N` — returns 403 Forbidden for anonymous viewers
+  - `/watch?embed&slide=N` — only working option, but animations are suppressed
+- **Resolution:** Staying on `/watch?embed&slide=N`. Animations would require Canva to expose a presentation-mode embed URL, which they currently do not.
 
 ---
 
