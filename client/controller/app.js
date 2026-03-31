@@ -389,7 +389,13 @@ pauseBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
   state.ws.send(JSON.stringify({ type: 'PAUSE' }));
   state.showPaused = true;
-  updateControlBtns();
+  // Select the active slide thumb so Resume is immediately available
+  if (state.selectedDesign?.id === state.activeDesignId) {
+    selectPage(state.activePageIndex);
+  } else {
+    state.selectedPageIndex = state.activePageIndex;
+    updateControlBtns();
+  }
 });
 
 stopBtn.addEventListener('click', () => {
