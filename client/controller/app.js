@@ -8,7 +8,11 @@ const state = {
   selectedDesign: null,
   selectedPageIndex: null,
   thumbGeneration: 0,       // incremented on each design select to cancel stale loads
+  thumbCache: {},           // { [designId]: { [pageIndex]: url } }
   showActive: false,        // true after Go Live, false after Stop
+  showPaused: false,        // true after Pause, false after Resume/Stop
+  activeDesignId: null,     // design currently on the display
+  activePageIndex: null,    // page currently on the display
   currentlyDisplaying: null, // { label }
   ws: null,
   wsConnected: false,
@@ -110,6 +114,12 @@ function connectWebSocket() {
 
     if (msg.type === 'DISPLAY_CONFIRMED') {
       showConfirmFlash();
+    }
+
+    if (msg.type === 'SLIDE_ADVANCED') {
+      state.activePageIndex = msg.pageIndex;
+      updateActiveOverlay();
+      updateControlBtns();
     }
   });
 }
@@ -231,13 +241,21 @@ function selectPage(pageIndex) {
 function loadSlideThumbnails(design) {
   const gen = ++state.thumbGeneration;
   const pageCount = design.page_count ?? 1;
+  const cache = state.thumbCache[design.id] ?? {};
   pageButtons.innerHTML = '';
 
   for (let i = 0; i < pageCount; i++) {
     const thumb = buildSlideThumb(i);
     pageButtons.appendChild(thumb);
-    loadThumbnail(design.id, i, thumb.querySelector('.slide-thumb__img'), gen);
+    const imgEl = thumb.querySelector('.slide-thumb__img');
+    if (cache[i]) {
+      imgEl.src = cache[i];
+    } else {
+      loadThumbnail(design.id, i, imgEl, gen);
+    }
   }
+
+  updateActiveOverlay();
 }
 
 function buildSlideThumb(pageIndex) {
@@ -273,7 +291,10 @@ async function loadThumbnail(designId, pageIndex, imgEl, gen) {
       const job = pollData.job;
       if (job?.status === 'success') {
         if (state.thumbGeneration !== gen) return;
-        imgEl.src = job.urls[0];
+        const url = job.urls[0];
+        if (!state.thumbCache[designId]) state.thumbCache[designId] = {};
+        state.thumbCache[designId][pageIndex] = url;
+        imgEl.src = url;
         return;
       }
       if (job?.status === 'failed') return;
@@ -283,50 +304,103 @@ async function loadThumbnail(designId, pageIndex, imgEl, gen) {
   }
 }
 
-// ─── Go Live ──────────────────────────────────────────────────────────────────
+// ─── Show controls ────────────────────────────────────────────────────────────
+
+function updateActiveOverlay() {
+  document.querySelectorAll('.slide-thumb').forEach(thumb => {
+    const page = parseInt(thumb.dataset.page);
+    const isActive = state.showActive
+      && state.selectedDesign?.id === state.activeDesignId
+      && page === state.activePageIndex;
+    thumb.classList.toggle('slide-thumb--active', isActive);
+  });
+}
 
 function updateControlBtns() {
-  goLiveBtn.disabled = state.selectedPageIndex === null
-    || !state.selectedDesign?.embedUrl
-    || !state.wsConnected;
-  pauseBtn.disabled = !state.showActive || !state.wsConnected;
+  // Green button says "Resume" when paused and no different slide is selected
+  const isResume = state.showPaused && (
+    state.selectedPageIndex === null ||
+    (state.selectedDesign?.id === state.activeDesignId &&
+     state.selectedPageIndex === state.activePageIndex)
+  );
+
+  goLiveBtn.textContent = isResume ? 'Resume' : 'Go Live';
+
+  goLiveBtn.disabled = isResume
+    ? !state.wsConnected
+    : state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.wsConnected;
+
+  pauseBtn.disabled = !state.showActive || state.showPaused || !state.wsConnected;
   stopBtn.disabled  = !state.showActive || !state.wsConnected;
 }
 
-// keep old name as alias so existing call sites still work
 function updateGoLiveBtn() { updateControlBtns(); }
 
 goLiveBtn.addEventListener('click', () => {
-  if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.ws || !state.wsConnected) return;
+  if (!state.ws || !state.wsConnected) return;
 
-  state.ws.send(JSON.stringify({
-    type: 'SHOW_SLIDE',
-    designId: state.selectedDesign.id,
-    pageIndex: state.selectedPageIndex,
-    pageCount: state.selectedDesign.page_count ?? 1,
-    embedUrl: state.selectedDesign.embedUrl,
-    autoAdvance: state.autoAdvance,
-    duration: state.slideDuration,
-  }));
+  const isResume = goLiveBtn.textContent === 'Resume';
 
-  const label = `${state.selectedDesign.title ?? 'Untitled'} — Slide ${state.selectedPageIndex + 1}`;
-  currentLabel.textContent = label;
-  currentlyDisp.classList.remove('hidden');
-  state.currentlyDisplaying = { label };
-  state.showActive = true;
-  updateControlBtns();
+  if (isResume) {
+    const design = state.designs.find(d => d.id === state.activeDesignId);
+    if (!design?.embedUrl) return;
+
+    state.ws.send(JSON.stringify({
+      type: 'SHOW_SLIDE',
+      designId: design.id,
+      pageIndex: state.activePageIndex,
+      pageCount: design.page_count ?? 1,
+      embedUrl: design.embedUrl,
+      autoAdvance: state.autoAdvance,
+      duration: state.slideDuration,
+    }));
+
+    state.showPaused = false;
+    updateControlBtns();
+  } else {
+    if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl) return;
+
+    state.ws.send(JSON.stringify({
+      type: 'SHOW_SLIDE',
+      designId: state.selectedDesign.id,
+      pageIndex: state.selectedPageIndex,
+      pageCount: state.selectedDesign.page_count ?? 1,
+      embedUrl: state.selectedDesign.embedUrl,
+      autoAdvance: state.autoAdvance,
+      duration: state.slideDuration,
+    }));
+
+    state.activeDesignId = state.selectedDesign.id;
+    state.activePageIndex = state.selectedPageIndex;
+    state.showActive = true;
+    state.showPaused = false;
+
+    const label = `${state.selectedDesign.title ?? 'Untitled'} — Slide ${state.selectedPageIndex + 1}`;
+    currentLabel.textContent = label;
+    currentlyDisp.classList.remove('hidden');
+    state.currentlyDisplaying = { label };
+
+    updateActiveOverlay();
+    updateControlBtns();
+  }
 });
 
 pauseBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
   state.ws.send(JSON.stringify({ type: 'PAUSE' }));
+  state.showPaused = true;
+  updateControlBtns();
 });
 
 stopBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
   state.ws.send(JSON.stringify({ type: 'STOP' }));
   state.showActive = false;
+  state.showPaused = false;
+  state.activeDesignId = null;
+  state.activePageIndex = null;
   currentlyDisp.classList.add('hidden');
+  updateActiveOverlay();
   updateControlBtns();
 });
 

@@ -50,16 +50,17 @@ function navigateToSlide(pageIndex) {
 
 function scheduleAutoAdvance() {
   const s = currentSlide;
-  if (!s.autoAdvance || s.pageIndex >= s.pageCount - 1) return;
+  if (!s.autoAdvance) return;
 
-  // Simple timeout — no dependency on the iframe load event, which doesn't
-  // fire for fragment navigations. Timer starts from when the slide is requested.
   autoAdvanceTimer = setTimeout(() => {
     if (currentSlide !== s) return; // superseded by a new SHOW_SLIDE message
-    const next = s.pageIndex + 1;
+    const next = s.pageIndex >= s.pageCount - 1 ? 0 : s.pageIndex + 1;
     currentSlide = { ...s, pageIndex: next };
     navigateToSlide(next);
     scheduleAutoAdvance();
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'SLIDE_ADVANCED', pageIndex: next }));
+    }
   }, s.duration * 1000);
 }
 

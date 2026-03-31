@@ -83,6 +83,13 @@ function handleMessage(ws, role, message) {
       break;
     }
 
+    // Display → Controller: auto-advance moved to a new slide
+    case 'SLIDE_ADVANCED': {
+      if (role !== 'display') break;
+      send(clients.controller, { type: 'SLIDE_ADVANCED', pageIndex: message.pageIndex });
+      break;
+    }
+
     // Display → Controller: acknowledge a slide was rendered
     case 'ACK': {
       if (role !== 'display') break;
