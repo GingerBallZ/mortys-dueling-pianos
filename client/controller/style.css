@@ -229,8 +229,8 @@ html, body {
 
 /* ── Slide thumbnails ── */
 .page-buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, min-content);
   gap: 8px;
   overflow-y: auto;
   flex: 1;
