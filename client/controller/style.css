@@ -318,12 +318,45 @@ html, body {
 
 .btn--live:hover:not(:disabled) { background: #c62828; }
 
-.btn--go-live {
-  width: 100%;
-  font-size: 1rem;
-  padding: 14px;
+/* ── Show control buttons ── */
+.control-row {
+  display: flex;
+  gap: 8px;
   flex-shrink: 0;
 }
+
+.btn--go-live {
+  flex: 1;
+  font-size: 0.95rem;
+  padding: 14px;
+  background: #2e7d32;
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn--go-live:hover:not(:disabled) { background: #1b5e20; }
+
+.btn--pause {
+  flex: 1;
+  font-size: 0.95rem;
+  padding: 14px;
+  background: #f9a825;
+  color: #000;
+  font-weight: 700;
+}
+
+.btn--pause:hover:not(:disabled) { background: #f57f17; }
+
+.btn--stop {
+  flex: 1;
+  font-size: 0.95rem;
+  padding: 14px;
+  background: #c62828;
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn--stop:hover:not(:disabled) { background: #b71c1c; }
 
 /* ── Confirmation flash ── */
 .confirm-flash {

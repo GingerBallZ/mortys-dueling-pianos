@@ -69,14 +69,17 @@ function handleMessage(ws, role, message) {
       break;
     }
 
-    // Controller → Display: show a full deck
-    case 'SHOW_DECK': {
+    // Controller → Display: pause auto-advance, hold current slide
+    case 'PAUSE': {
       if (role !== 'controller') break;
-      send(clients.display, {
-        type: 'SHOW_DECK',
-        designId: message.designId,
-        mode: message.mode ?? 'manual',
-      });
+      send(clients.display, { type: 'PAUSE' });
+      break;
+    }
+
+    // Controller → Display: end show, return to waiting screen
+    case 'STOP': {
+      if (role !== 'controller') break;
+      send(clients.display, { type: 'STOP' });
       break;
     }
 

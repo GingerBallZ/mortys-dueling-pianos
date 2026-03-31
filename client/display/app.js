@@ -111,6 +111,21 @@ function connect() {
         slideId: `${message.designId ?? 'unknown'}-${message.pageIndex ?? 0}`,
       }));
     }
+
+    if (message.type === 'PAUSE') {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+    }
+
+    if (message.type === 'STOP') {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+      currentSlide = null;
+      currentEmbedUrl = null;
+      frame.src = 'about:blank';
+      statusEl.textContent = 'Connected — waiting for slide...';
+      statusEl.classList.remove('hidden');
+    }
   });
 
   ws.addEventListener('close', () => {

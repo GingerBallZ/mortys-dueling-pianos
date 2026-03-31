@@ -8,6 +8,7 @@ const state = {
   selectedDesign: null,
   selectedPageIndex: null,
   thumbGeneration: 0,       // incremented on each design select to cancel stale loads
+  showActive: false,        // true after Go Live, false after Stop
   currentlyDisplaying: null, // { label }
   ws: null,
   wsConnected: false,
@@ -40,6 +41,8 @@ const embedCancelBtn  = document.getElementById('embed-cancel-btn');
 const embedError      = document.getElementById('embed-error');
 const pageButtons     = document.getElementById('page-buttons');
 const goLiveBtn       = document.getElementById('go-live-btn');
+const pauseBtn        = document.getElementById('pause-btn');
+const stopBtn         = document.getElementById('stop-btn');
 const confirmFlash    = document.getElementById('confirm-flash');
 const wsStatus        = document.getElementById('ws-status');
 const displayStatus   = document.getElementById('display-status');
@@ -282,11 +285,16 @@ async function loadThumbnail(designId, pageIndex, imgEl, gen) {
 
 // ─── Go Live ──────────────────────────────────────────────────────────────────
 
-function updateGoLiveBtn() {
+function updateControlBtns() {
   goLiveBtn.disabled = state.selectedPageIndex === null
     || !state.selectedDesign?.embedUrl
     || !state.wsConnected;
+  pauseBtn.disabled = !state.showActive || !state.wsConnected;
+  stopBtn.disabled  = !state.showActive || !state.wsConnected;
 }
+
+// keep old name as alias so existing call sites still work
+function updateGoLiveBtn() { updateControlBtns(); }
 
 goLiveBtn.addEventListener('click', () => {
   if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.ws || !state.wsConnected) return;
@@ -305,6 +313,21 @@ goLiveBtn.addEventListener('click', () => {
   currentLabel.textContent = label;
   currentlyDisp.classList.remove('hidden');
   state.currentlyDisplaying = { label };
+  state.showActive = true;
+  updateControlBtns();
+});
+
+pauseBtn.addEventListener('click', () => {
+  if (!state.ws || !state.wsConnected) return;
+  state.ws.send(JSON.stringify({ type: 'PAUSE' }));
+});
+
+stopBtn.addEventListener('click', () => {
+  if (!state.ws || !state.wsConnected) return;
+  state.ws.send(JSON.stringify({ type: 'STOP' }));
+  state.showActive = false;
+  currentlyDisp.classList.add('hidden');
+  updateControlBtns();
 });
 
 // ─── Embed URL setup ──────────────────────────────────────────────────────────
