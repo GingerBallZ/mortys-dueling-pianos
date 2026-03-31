@@ -13,9 +13,9 @@ html, body {
 }
 
 /* Canva presentation iframe — full screen, no border.
-   top: -70px compensates for Canva centering the slide ~70px down
+   top: -75px compensates for Canva centering the slide ~75px down
    inside the iframe when it has extra height.
-   height: calc(100% + 200px) adds enough room below the slide for
+   height: calc(100% + 148px) adds enough room below the slide for
    Canva's navigation bar to sit outside the visible viewport.
    Together these show the slide edge-to-edge with no black bars and
    no Canva UI visible.
@@ -25,10 +25,10 @@ html, body {
    advancing slides. */
 .slide-frame {
   position: fixed;
-  top: -70px;
+  top: -75px;
   left: 0;
   width: 100%;
-  height: calc(100% + 200px);
+  height: calc(100% + 148px);
   border: none;
   background: #000;
   pointer-events: none;
