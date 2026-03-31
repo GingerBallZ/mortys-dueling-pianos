@@ -13,16 +13,22 @@ html, body {
 }
 
 /* Canva presentation iframe — full screen, no border.
+   top: -70px compensates for Canva centering the slide ~70px down
+   inside the iframe when it has extra height.
+   height: calc(100% + 200px) adds enough room below the slide for
+   Canva's navigation bar to sit outside the visible viewport.
+   Together these show the slide edge-to-edge with no black bars and
+   no Canva UI visible.
+   If the slide appears shifted, adjust top and height in tandem
+   (increase top offset → increase height by the same amount).
    pointer-events: none prevents the Fire TV remote from accidentally
-   advancing slides via click/D-pad interaction with Canva's UI.
-   It also means Canva's JavaScript never receives mouse events, so
-   the auto-hiding navigation bar disappears shortly after load and
-   stays hidden — no CSS hacks needed. */
+   advancing slides. */
 .slide-frame {
   position: fixed;
-  inset: 0;
+  top: -70px;
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 200px);
   border: none;
   background: #000;
   pointer-events: none;
