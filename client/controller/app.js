@@ -7,10 +7,7 @@ const state = {
   continuation: null,       // pagination cursor from Canva
   selectedDesign: null,
   selectedPageIndex: null,
-  preview: {
-    url: null,              // final image URL once export is done
-    pollTimer: null,        // setInterval handle for export polling
-  },
+  thumbGeneration: 0,       // incremented on each design select to cancel stale loads
   currentlyDisplaying: null, // { label }
   ws: null,
   wsConnected: false,
@@ -42,10 +39,6 @@ const embedSaveBtn    = document.getElementById('embed-save-btn');
 const embedCancelBtn  = document.getElementById('embed-cancel-btn');
 const embedError      = document.getElementById('embed-error');
 const pageButtons     = document.getElementById('page-buttons');
-const previewArea     = document.getElementById('preview-area');
-const previewLoading  = document.getElementById('preview-loading');
-const previewError    = document.getElementById('preview-error');
-const previewImg      = document.getElementById('preview-img');
 const goLiveBtn       = document.getElementById('go-live-btn');
 const confirmFlash    = document.getElementById('confirm-flash');
 const wsStatus        = document.getElementById('ws-status');
@@ -203,7 +196,6 @@ function buildDesignCard(design) {
 function selectDesign(design) {
   state.selectedDesign = design;
   state.selectedPageIndex = null;
-  cancelPreview();
 
   document.querySelectorAll('.design-card').forEach(c => {
     c.classList.toggle('selected', c.dataset.id === design.id);
@@ -214,19 +206,8 @@ function selectDesign(design) {
 
   panelTitle.textContent = design.title ?? 'Untitled';
   renderEmbedStatus(design);
+  loadSlideThumbnails(design);
 
-  // Build page buttons
-  const pageCount = design.page_count ?? 1;
-  pageButtons.innerHTML = '';
-  for (let i = 0; i < pageCount; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'page-btn';
-    btn.textContent = `Slide ${i + 1}`;
-    btn.addEventListener('click', () => selectPage(i));
-    pageButtons.appendChild(btn);
-  }
-
-  setPreviewState('empty');
   confirmFlash.classList.add('hidden');
   updateGoLiveBtn();
 }
@@ -234,108 +215,81 @@ function selectDesign(design) {
 function selectPage(pageIndex) {
   state.selectedPageIndex = pageIndex;
 
-  document.querySelectorAll('.page-btn').forEach((btn, i) => {
-    btn.classList.toggle('selected', i === pageIndex);
+  document.querySelectorAll('.slide-thumb').forEach(thumb => {
+    thumb.classList.toggle('selected', parseInt(thumb.dataset.page) === pageIndex);
   });
 
   confirmFlash.classList.add('hidden');
-  startExportPreview(pageIndex);
+  updateGoLiveBtn();
 }
 
-// ─── Export & preview ─────────────────────────────────────────────────────────
+// ─── Slide thumbnails ─────────────────────────────────────────────────────────
 
-async function startExportPreview(pageIndex) {
-  cancelPreview();
-  setPreviewState('loading');
-  updateGoLiveBtn();
+function loadSlideThumbnails(design) {
+  const gen = ++state.thumbGeneration;
+  const pageCount = design.page_count ?? 1;
+  pageButtons.innerHTML = '';
 
+  for (let i = 0; i < pageCount; i++) {
+    const thumb = buildSlideThumb(i);
+    pageButtons.appendChild(thumb);
+    loadThumbnail(design.id, i, thumb.querySelector('.slide-thumb__img'), gen);
+  }
+}
+
+function buildSlideThumb(pageIndex) {
+  const div = document.createElement('div');
+  div.className = 'slide-thumb';
+  div.dataset.page = pageIndex;
+  div.innerHTML = `
+    <div class="slide-thumb__img-wrap">
+      <img class="slide-thumb__img" alt="Slide ${pageIndex + 1}">
+    </div>
+    <span class="slide-thumb__label">Slide ${pageIndex + 1}</span>
+  `;
+  div.addEventListener('click', () => selectPage(pageIndex));
+  return div;
+}
+
+async function loadThumbnail(designId, pageIndex, imgEl, gen) {
   try {
-    const res = await fetch(`/api/designs/${state.selectedDesign.id}/export`, {
+    const res = await fetch(`/api/designs/${designId}/export`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pageIndex }),
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    if (data.error || !data.job?.id) return;
 
-    const exportId = data.job?.id;
-    if (!exportId) throw new Error('No export job ID returned.');
-
-    pollExport(exportId, pageIndex);
-  } catch (err) {
-    console.error('[controller] Export start error:', err);
-    setPreviewState('error');
-  }
-}
-
-function pollExport(exportId, pageIndex) {
-  state.preview.pollTimer = setInterval(async () => {
-    if (state.selectedPageIndex !== pageIndex) {
-      cancelPreview();
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/designs/exports/${exportId}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      const job = data.job;
-      if (!job) throw new Error('Unexpected export response.');
-
-      if (job.status === 'success') {
-        cancelPreview();
-        const url = job.urls?.[0];
-        if (!url) throw new Error('No URL in export result.');
-        state.preview.url = url;
-        setPreviewState('ready', url);
-        updateGoLiveBtn();
-      } else if (job.status === 'failed') {
-        cancelPreview();
-        setPreviewState('error');
+    const exportId = data.job.id;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await new Promise(r => setTimeout(r, 1500));
+      if (state.thumbGeneration !== gen) return; // design changed, abandon
+      const pollRes = await fetch(`/api/designs/exports/${exportId}`);
+      const pollData = await pollRes.json();
+      const job = pollData.job;
+      if (job?.status === 'success') {
+        if (state.thumbGeneration !== gen) return;
+        imgEl.src = job.urls[0];
+        return;
       }
-      // status === 'in_progress' → keep polling
-    } catch (err) {
-      console.error('[controller] Export poll error:', err);
-      cancelPreview();
-      setPreviewState('error');
+      if (job?.status === 'failed') return;
     }
-  }, 1500);
-}
-
-function cancelPreview() {
-  if (state.preview.pollTimer) {
-    clearInterval(state.preview.pollTimer);
-    state.preview.pollTimer = null;
-  }
-  state.preview.url = null;
-}
-
-function setPreviewState(mode, url = null) {
-  previewLoading.classList.add('hidden');
-  previewError.classList.add('hidden');
-  previewImg.classList.add('hidden');
-
-  if (mode === 'loading') {
-    previewLoading.classList.remove('hidden');
-  } else if (mode === 'error') {
-    previewError.classList.remove('hidden');
-  } else if (mode === 'ready' && url) {
-    previewImg.src = url;
-    previewImg.classList.remove('hidden');
+  } catch {
+    // silent fail — placeholder stays
   }
 }
 
 // ─── Go Live ──────────────────────────────────────────────────────────────────
 
 function updateGoLiveBtn() {
-  goLiveBtn.disabled = !state.preview.url
+  goLiveBtn.disabled = state.selectedPageIndex === null
     || !state.selectedDesign?.embedUrl
     || !state.wsConnected;
 }
 
 goLiveBtn.addEventListener('click', () => {
-  if (!state.preview.url || !state.selectedDesign?.embedUrl || !state.ws || !state.wsConnected) return;
+  if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.ws || !state.wsConnected) return;
 
   state.ws.send(JSON.stringify({
     type: 'SHOW_SLIDE',
