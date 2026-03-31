@@ -267,17 +267,21 @@ html, body {
   flex-shrink: 0;
 }
 
+.slide-thumb--active {
+  border-color: #35a745;
+}
+
 .slide-thumb--active .slide-thumb__img-wrap::after {
   content: 'Active';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.55rem;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
