@@ -323,9 +323,12 @@ http://127.0.0.1:3000/auth/callback
 
 ### UI / Controller
 - [ ] Forward and Back nav arrows in the controller to advance or return to the next/previous slide without tapping individual slide buttons
-- [ ] Reduce vertical height of the Preview window; increase Slide Selection area accordingly
 - [ ] Change scrollbar color to be more visible against dark background
-- [ ] Make Preview image load faster (investigate pre-export on design select, or parallel export requests)
+- [ ] Replace auto-advance duration text input with a dropdown of preset values plus a "custom" option; label reads "Auto-advance slide show every [dropdown] sec/slide"
+- [ ] Add brief instruction text above the thumbnail grid (e.g. "Select a slide, then tap Go Live")
+- [ ] Once a design's embed URL is configured, hide the "Set Embed URL" button — only show it again if the user explicitly needs to re-link (e.g. a small "re-link" affordance instead of a persistent "Change" button)
+- [ ] Tie the embed URL status indicator and setup button label to the specific slide show name so it's clear which design is being configured
+- [ ] Investigate auto-populating the embed URL for a selected design (e.g. via Canva API or a stored association), reducing manual paste steps
 
 ### Display / Show Control
 - [ ] "End Show" button on controller: loads the "Waiting for controller..." screen on the display and exits fullscreen
