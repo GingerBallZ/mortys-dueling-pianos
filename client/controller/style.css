@@ -387,13 +387,19 @@ html, body {
   flex-shrink: 0;
 }
 
-/* ── Auto-advance row ── */
-.auto-advance-row {
+/* ── Panel footer (auto-advance + show controls) ── */
+.panel-footer {
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
-  margin-bottom: -6px; /* equalises spacing above/below the duration row */
+}
+
+/* ── Auto-advance row ── */
+.auto-advance-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .toggle-label {
@@ -429,16 +435,13 @@ html, body {
   border: 1px solid #333;
   border-radius: 6px;
   font-size: 0.8rem;
-  min-height: 36px;
+  height: 36px;
   cursor: pointer;
-  /* placeholder state — italic gray until a value is chosen */
-  color: #666;
-  font-style: italic;
+  color: #666; /* placeholder state — gray until a value is chosen */
 }
 
 .duration-select.has-value {
   color: #eee;
-  font-style: normal;
 }
 
 .duration-select:disabled {
@@ -465,7 +468,7 @@ html, body {
   color: #eee;
   font-size: 0.85rem;
   text-align: center;
-  min-height: 36px;
+  height: 36px;
 }
 
 .duration-unit {

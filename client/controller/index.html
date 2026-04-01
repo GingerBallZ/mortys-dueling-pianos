@@ -63,36 +63,36 @@
         <!-- Slide thumbnails -->
         <div id="page-buttons" class="page-buttons"></div>
 
-        <!-- Auto-advance settings -->
-        <div class="auto-advance-row">
-          <label class="toggle-label">
-            <input type="checkbox" id="auto-advance-toggle">
-            <span>Auto-advance slide show every...</span>
-          </label>
-          <div id="duration-row" class="duration-row">
-            <select id="slide-duration-select" class="duration-select" disabled>
-              <option value="" disabled selected>Delay Time</option>
-              <option value="30">30 Seconds</option>
-              <option value="60">1 Minute</option>
-              <option value="180">3 Minutes</option>
-              <option value="300">5 Minutes</option>
-              <option value="600">10 Minutes</option>
-              <option value="custom">Custom (MM:SS)</option>
-            </select>
-            <input type="text" id="slide-duration-custom" class="duration-input hidden" placeholder="MM:SS" maxlength="5">
-            <span id="countdown-display" class="countdown-display hidden">00:00</span>
+        <!-- Auto-advance + show controls -->
+        <div class="panel-footer">
+          <div class="auto-advance-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="auto-advance-toggle">
+              <span>Auto-advance slide show every...</span>
+            </label>
+            <div id="duration-row" class="duration-row">
+              <select id="slide-duration-select" class="duration-select" disabled>
+                <option value="" disabled selected>Delay Time</option>
+                <option value="30">30 Seconds</option>
+                <option value="60">1 Minute</option>
+                <option value="180">3 Minutes</option>
+                <option value="300">5 Minutes</option>
+                <option value="600">10 Minutes</option>
+                <option value="custom">Custom (MM:SS)</option>
+              </select>
+              <input type="text" id="slide-duration-custom" class="duration-input hidden" placeholder="MM:SS" maxlength="5">
+              <span id="countdown-display" class="countdown-display hidden">00:00</span>
+            </div>
           </div>
-        </div>
 
-        <!-- Show controls -->
-        <div class="control-row">
-          <button id="go-live-btn" class="btn btn--go-live" disabled>Go Live</button>
-          <button id="pause-btn" class="btn btn--pause" disabled>Pause</button>
-          <button id="stop-btn" class="btn btn--stop" disabled>Stop</button>
-        </div>
+          <div class="control-row">
+            <button id="go-live-btn" class="btn btn--go-live" disabled>Go Live</button>
+            <button id="pause-btn" class="btn btn--pause" disabled>Pause</button>
+            <button id="stop-btn" class="btn btn--stop" disabled>Stop</button>
+          </div>
 
-        <!-- Confirmation flash -->
-        <div id="confirm-flash" class="confirm-flash hidden">✓ Sent to display</div>
+          <div id="confirm-flash" class="confirm-flash hidden">✓ Sent to display</div>
+        </div>
       </div>
     </aside>
 
