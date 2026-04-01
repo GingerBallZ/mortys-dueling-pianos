@@ -122,8 +122,30 @@ html, body {
   gap: 12px;
   padding: 16px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   align-content: start;
+}
+
+/* ── Scrollbars ── */
+.design-grid::-webkit-scrollbar,
+.page-buttons::-webkit-scrollbar { width: 6px; }
+
+.design-grid::-webkit-scrollbar-track,
+.page-buttons::-webkit-scrollbar-track { background: transparent; }
+
+.design-grid::-webkit-scrollbar-thumb,
+.page-buttons::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 3px;
+}
+
+.design-grid::-webkit-scrollbar-thumb:hover,
+.page-buttons::-webkit-scrollbar-thumb:hover { background: #5a5a5a; }
+
+.design-grid, .page-buttons {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a transparent;
 }
 
 .placeholder { color: #555; font-size: 0.9rem; grid-column: 1/-1; }
@@ -233,10 +255,40 @@ html, body {
   grid-template-columns: repeat(3, min-content);
   gap: 8px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   align-content: start;
   padding: 2px;
 }
+
+/* ── Slide nav row ── */
+.slide-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.slide-nav-label {
+  flex: 1;
+  font-size: 0.75rem;
+  color: #888;
+  text-align: center;
+}
+
+.btn--nav {
+  background: #2a2a2a;
+  color: #ccc;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.btn--nav:hover:not(:disabled) { background: #3d3d3d; }
 
 .slide-thumb {
   display: flex;

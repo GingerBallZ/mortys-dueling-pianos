@@ -48,6 +48,10 @@ const embedSaveBtn    = document.getElementById('embed-save-btn');
 const embedCancelBtn  = document.getElementById('embed-cancel-btn');
 const embedError      = document.getElementById('embed-error');
 const pageButtons     = document.getElementById('page-buttons');
+const slideNav        = document.getElementById('slide-nav');
+const prevBtn         = document.getElementById('prev-btn');
+const nextBtn         = document.getElementById('next-btn');
+const slideNavLabel   = document.getElementById('slide-nav-label');
 const goLiveBtn       = document.getElementById('go-live-btn');
 const pauseBtn        = document.getElementById('pause-btn');
 const stopBtn         = document.getElementById('stop-btn');
@@ -122,9 +126,11 @@ function connectWebSocket() {
 
     if (msg.type === 'SLIDE_ADVANCED') {
       state.activePageIndex = msg.pageIndex;
+      state.selectedPageIndex = msg.pageIndex;
       if (state.autoAdvance) startCountdown(state.slideDuration);
       updateActiveOverlay();
       updateControlBtns();
+      updateSlideNav();
     }
   });
 }
@@ -221,6 +227,7 @@ function selectDesign(design) {
 
   panelEmpty.classList.add('hidden');
   panelContent.classList.remove('hidden');
+  slideNav.classList.remove('hidden');
 
   panelTitle.textContent = design.title ?? 'Untitled';
   renderEmbedStatus(design);
@@ -228,6 +235,7 @@ function selectDesign(design) {
 
   confirmFlash.classList.add('hidden');
   updateGoLiveBtn();
+  updateSlideNav();
 }
 
 function selectPage(pageIndex) {
@@ -239,6 +247,7 @@ function selectPage(pageIndex) {
 
   confirmFlash.classList.add('hidden');
   updateGoLiveBtn();
+  updateSlideNav();
 }
 
 // ─── Slide thumbnails ─────────────────────────────────────────────────────────
@@ -341,6 +350,69 @@ function updateControlBtns() {
 
 function updateGoLiveBtn() { updateControlBtns(); }
 
+function updateSlideNav() {
+  if (!state.selectedDesign) return;
+  const pageCount = state.selectedDesign.page_count ?? 1;
+  const idx = state.selectedPageIndex;
+
+  slideNavLabel.textContent = idx === null
+    ? 'Select a slide, then tap Go Live'
+    : `Slide ${idx + 1} of ${pageCount}`;
+
+  prevBtn.disabled = idx === null || idx === 0;
+  nextBtn.disabled = idx === null || idx >= pageCount - 1;
+}
+
+function sendShowSlide(design, pageIndex) {
+  if (!state.ws || !state.wsConnected) return;
+
+  state.ws.send(JSON.stringify({
+    type: 'SHOW_SLIDE',
+    designId: design.id,
+    pageIndex,
+    pageCount: design.page_count ?? 1,
+    embedUrl: design.embedUrl,
+    autoAdvance: state.autoAdvance,
+    duration: state.slideDuration,
+  }));
+
+  state.activeDesignId = design.id;
+  state.activePageIndex = pageIndex;
+  state.showActive = true;
+  state.showPaused = false;
+
+  const label = `${design.title ?? 'Untitled'} — Slide ${pageIndex + 1}`;
+  currentLabel.textContent = label;
+  currentlyDisp.classList.remove('hidden');
+  state.currentlyDisplaying = { label };
+
+  if (state.autoAdvance) startCountdown(state.slideDuration);
+  else clearCountdown();
+
+  updateActiveOverlay();
+  updateControlBtns();
+  updateSlideNav();
+}
+
+function goToSlide(pageIndex) {
+  selectPage(pageIndex);
+  if (state.showActive && !state.showPaused && state.selectedDesign?.embedUrl && state.wsConnected) {
+    sendShowSlide(state.selectedDesign, pageIndex);
+  }
+}
+
+prevBtn.addEventListener('click', () => {
+  if (state.selectedPageIndex === null || state.selectedPageIndex <= 0) return;
+  goToSlide(state.selectedPageIndex - 1);
+});
+
+nextBtn.addEventListener('click', () => {
+  if (!state.selectedDesign) return;
+  const pageCount = state.selectedDesign.page_count ?? 1;
+  if (state.selectedPageIndex === null || state.selectedPageIndex >= pageCount - 1) return;
+  goToSlide(state.selectedPageIndex + 1);
+});
+
 goLiveBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
 
@@ -365,32 +437,7 @@ goLiveBtn.addEventListener('click', () => {
     updateControlBtns();
   } else {
     if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl) return;
-
-    state.ws.send(JSON.stringify({
-      type: 'SHOW_SLIDE',
-      designId: state.selectedDesign.id,
-      pageIndex: state.selectedPageIndex,
-      pageCount: state.selectedDesign.page_count ?? 1,
-      embedUrl: state.selectedDesign.embedUrl,
-      autoAdvance: state.autoAdvance,
-      duration: state.slideDuration,
-    }));
-
-    state.activeDesignId = state.selectedDesign.id;
-    state.activePageIndex = state.selectedPageIndex;
-    state.showActive = true;
-    state.showPaused = false;
-
-    const label = `${state.selectedDesign.title ?? 'Untitled'} — Slide ${state.selectedPageIndex + 1}`;
-    currentLabel.textContent = label;
-    currentlyDisp.classList.remove('hidden');
-    state.currentlyDisplaying = { label };
-
-    if (state.autoAdvance) startCountdown(state.slideDuration);
-    else clearCountdown();
-
-    updateActiveOverlay();
-    updateControlBtns();
+    sendShowSlide(state.selectedDesign, state.selectedPageIndex);
   }
 });
 
@@ -419,6 +466,7 @@ stopBtn.addEventListener('click', () => {
   clearCountdown();
   updateActiveOverlay();
   updateControlBtns();
+  updateSlideNav();
 });
 
 // ─── Embed URL setup ──────────────────────────────────────────────────────────
