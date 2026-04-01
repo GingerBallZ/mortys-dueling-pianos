@@ -2,6 +2,7 @@
 
 const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
+const fsPrompt = document.getElementById('fs-prompt');
 
 let autoAdvanceTimer = null;
 let currentSlide = null;
@@ -64,6 +65,17 @@ function scheduleAutoAdvance() {
   }, s.duration * 1000);
 }
 
+// --- Fullscreen prompt ---
+
+function dismissPrompt() {
+  fsPrompt.classList.add('hidden');
+  enterFullscreen();
+}
+
+['click', 'keydown', 'touchstart'].forEach(evt =>
+  fsPrompt.addEventListener(evt, dismissPrompt, { once: true })
+);
+
 // --- Fullscreen ---
 
 function enterFullscreen() {
@@ -121,7 +133,6 @@ function connect() {
     console.log('[display] Connected');
     statusEl.textContent = 'Connected — waiting for slide...';
     clearTimeout(reconnectTimer);
-    enterFullscreen();
   });
 
   ws.addEventListener('message', (event) => {
