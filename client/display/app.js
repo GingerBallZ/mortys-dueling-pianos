@@ -64,6 +64,47 @@ function scheduleAutoAdvance() {
   }, s.duration * 1000);
 }
 
+// --- Fullscreen ---
+
+function enterFullscreen() {
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+// --- Wake lock ---
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (err) {
+    console.warn('[display] Wake lock request failed:', err.message);
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release();
+    wakeLock = null;
+  }
+}
+
+// Wake lock is auto-released when the tab loses visibility — re-acquire on return if show is active.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentSlide) {
+    requestWakeLock();
+  }
+});
+
 // --- WebSocket connection ---
 
 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -80,10 +121,7 @@ function connect() {
     console.log('[display] Connected');
     statusEl.textContent = 'Connected — waiting for slide...';
     clearTimeout(reconnectTimer);
-
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
+    enterFullscreen();
   });
 
   ws.addEventListener('message', (event) => {
@@ -106,6 +144,9 @@ function connect() {
         message.duration ?? 5,
       );
 
+      enterFullscreen();
+      requestWakeLock();
+
       ws.send(JSON.stringify({
         type: 'ACK',
         status: 'displayed',
@@ -126,12 +167,15 @@ function connect() {
       frame.src = 'about:blank';
       statusEl.textContent = 'Connected — waiting for slide...';
       statusEl.classList.remove('hidden');
+      exitFullscreen();
+      releaseWakeLock();
     }
   });
 
   ws.addEventListener('close', () => {
     console.warn('[display] Disconnected — retrying in 3s');
     clearTimeout(autoAdvanceTimer);
+    releaseWakeLock();
     statusEl.textContent = 'Connection lost — reconnecting...';
     statusEl.classList.remove('hidden');
     scheduleReconnect();
