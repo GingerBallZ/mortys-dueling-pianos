@@ -472,14 +472,17 @@ stopBtn.addEventListener('click', () => {
 // ─── Embed URL setup ──────────────────────────────────────────────────────────
 
 function renderEmbedStatus(design) {
+  const name = design.title ?? 'Untitled';
   if (design.embedUrl) {
-    embedMsg.textContent = 'Embed configured';
+    embedMsg.textContent = `"${name}" — embed ready`;
     embedMsg.className = 'embed-msg configured';
-    setEmbedBtn.textContent = 'Change';
+    setEmbedBtn.textContent = 're-link';
+    setEmbedBtn.className = 'btn btn--relink';
   } else {
-    embedMsg.textContent = 'No embed URL — display will not work';
+    embedMsg.textContent = `"${name}" — no embed URL`;
     embedMsg.className = 'embed-msg missing';
     setEmbedBtn.textContent = 'Set embed URL';
+    setEmbedBtn.className = 'btn btn--secondary btn--sm';
   }
 }
 
