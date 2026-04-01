@@ -4,6 +4,14 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 const fsPrompt = document.getElementById('fs-prompt');
 
+// Auto-hide cursor after 3 seconds of inactivity
+let cursorTimer = null;
+document.addEventListener('mousemove', () => {
+  document.body.style.cursor = '';
+  clearTimeout(cursorTimer);
+  cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
+});
+
 let autoAdvanceTimer = null;
 let currentSlide = null;
 let currentEmbedUrl = null; // which design is loaded in embed mode
