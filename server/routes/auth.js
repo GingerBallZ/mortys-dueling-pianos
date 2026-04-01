@@ -54,6 +54,21 @@ router.get('/status', (req, res) => {
   res.json({ authenticated: canva.isAuthenticated() });
 });
 
+// GET /auth/whoami
+// Returns the Canva user ID and team ID of the authenticated user.
+// Use this to get the user_id needed to add someone as a test user in the Canva Developer Portal.
+router.get('/whoami', async (req, res) => {
+  if (!canva.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated. Visit /auth/login first.' });
+  }
+  try {
+    const data = await canva.canvaRequest('GET', '/users/me');
+    res.json({ user_id: data.profile?.user_id ?? data.user_id, team_id: data.profile?.team_id ?? data.team_id, raw: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /auth/logout
 // Clears stored tokens and redirects to login
 router.get('/logout', (req, res) => {
