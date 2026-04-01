@@ -49,8 +49,8 @@ const embedCancelBtn  = document.getElementById('embed-cancel-btn');
 const embedError      = document.getElementById('embed-error');
 const pageButtons     = document.getElementById('page-buttons');
 const slideNav        = document.getElementById('slide-nav');
-const prevBtn         = document.getElementById('prev-btn');
-const nextBtn         = document.getElementById('next-btn');
+// const prevBtn      = document.getElementById('prev-btn');  // commented out in HTML
+// const nextBtn      = document.getElementById('next-btn');  // commented out in HTML
 const slideNavLabel   = document.getElementById('slide-nav-label');
 const goLiveBtn       = document.getElementById('go-live-btn');
 const pauseBtn        = document.getElementById('pause-btn');
@@ -401,17 +401,9 @@ function goToSlide(pageIndex) {
   }
 }
 
-prevBtn.addEventListener('click', () => {
-  if (state.selectedPageIndex === null || state.selectedPageIndex <= 0) return;
-  goToSlide(state.selectedPageIndex - 1);
-});
-
-nextBtn.addEventListener('click', () => {
-  if (!state.selectedDesign) return;
-  const pageCount = state.selectedDesign.page_count ?? 1;
-  if (state.selectedPageIndex === null || state.selectedPageIndex >= pageCount - 1) return;
-  goToSlide(state.selectedPageIndex + 1);
-});
+// prevBtn/nextBtn listeners commented out — buttons removed from HTML for now
+// prevBtn.addEventListener('click', () => { ... });
+// nextBtn.addEventListener('click', () => { ... });
 
 goLiveBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
