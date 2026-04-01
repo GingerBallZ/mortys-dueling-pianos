@@ -25,9 +25,12 @@ function get(designId) {
 
 // Accepts a full Canva embed URL or pasted iframe HTML and extracts the view token.
 // Expected URL shape: https://www.canva.com/design/{designId}/{viewToken}/view?...
-function extractViewToken(input) {
-  const match = input.match(/\/design\/[A-Za-z0-9_-]+\/([A-Za-z0-9_-]+)\/view/);
-  return match ? match[1] : null;
+// If designId is provided, validates that the URL belongs to that design.
+function extractViewToken(input, designId) {
+  const match = input.match(/\/design\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)\/view/);
+  if (!match) return null;
+  if (designId && match[1] !== designId) return null;
+  return match[2];
 }
 
 module.exports = { load, save, get, extractViewToken };

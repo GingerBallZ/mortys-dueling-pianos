@@ -75,9 +75,9 @@ router.post('/:designId/embed-token', (req, res) => {
     return res.status(400).json({ error: 'embedUrl is required.' });
   }
 
-  const viewToken = embedTokens.extractViewToken(embedUrl);
+  const viewToken = embedTokens.extractViewToken(embedUrl, req.params.designId);
   if (!viewToken) {
-    return res.status(400).json({ error: 'Could not find a Canva view token. Make sure you\'re pasting from Share → Embed in Canva.' });
+    return res.status(400).json({ error: 'Could not find a valid Canva view token. Make sure you\'re pasting the embed URL for this specific design.' });
   }
 
   embedTokens.save(req.params.designId, viewToken);

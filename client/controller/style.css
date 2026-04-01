@@ -271,14 +271,15 @@ html, body {
 
 .slide-nav-label {
   flex: 1;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: #888;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .slide-nav-label--ready { color: #eee; }
-
-.btn--nav { display: none; }
 
 .slide-thumb {
   display: flex;
