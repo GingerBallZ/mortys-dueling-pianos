@@ -440,6 +440,11 @@ html, body {
   font-style: normal;
 }
 
+.duration-select:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .duration-select option {
   background: #1e1e1e;
   color: #eee;
@@ -465,6 +470,17 @@ html, body {
 
 .duration-unit {
   white-space: nowrap;
+}
+
+/* ── Countdown display ── */
+.countdown-display {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+  min-width: 44px;
+  text-align: center;
 }
 
 /* ── Embed URL section (inside panel) ── */

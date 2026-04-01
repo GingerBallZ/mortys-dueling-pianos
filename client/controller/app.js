@@ -9,6 +9,8 @@ const state = {
   selectedPageIndex: null,
   thumbGeneration: 0,       // incremented on each design select to cancel stale loads
   thumbCache: {},           // { [designId]: { [pageIndex]: url } }
+  countdownInterval: null,
+  countdownRemaining: 0,
   showActive: false,        // true after Go Live, false after Stop
   showPaused: false,        // true after Pause, false after Resume/Stop
   activeDesignId: null,     // design currently on the display
@@ -39,6 +41,7 @@ const autoAdvanceToggle    = document.getElementById('auto-advance-toggle');
 const durationRow          = document.getElementById('duration-row');
 const slideDurationSelect  = document.getElementById('slide-duration-select');
 const slideDurationCustom  = document.getElementById('slide-duration-custom');
+const countdownDisplay     = document.getElementById('countdown-display');
 const embedModal      = document.getElementById('embed-modal');
 const embedInput      = document.getElementById('embed-input');
 const embedSaveBtn    = document.getElementById('embed-save-btn');
@@ -119,6 +122,7 @@ function connectWebSocket() {
 
     if (msg.type === 'SLIDE_ADVANCED') {
       state.activePageIndex = msg.pageIndex;
+      if (state.autoAdvance) startCountdown(state.slideDuration);
       updateActiveOverlay();
       updateControlBtns();
     }
@@ -357,6 +361,7 @@ goLiveBtn.addEventListener('click', () => {
     }));
 
     state.showPaused = false;
+    if (state.autoAdvance) resumeCountdown();
     updateControlBtns();
   } else {
     if (state.selectedPageIndex === null || !state.selectedDesign?.embedUrl) return;
@@ -381,6 +386,9 @@ goLiveBtn.addEventListener('click', () => {
     currentlyDisp.classList.remove('hidden');
     state.currentlyDisplaying = { label };
 
+    if (state.autoAdvance) startCountdown(state.slideDuration);
+    else clearCountdown();
+
     updateActiveOverlay();
     updateControlBtns();
   }
@@ -390,6 +398,7 @@ pauseBtn.addEventListener('click', () => {
   if (!state.ws || !state.wsConnected) return;
   state.ws.send(JSON.stringify({ type: 'PAUSE' }));
   state.showPaused = true;
+  pauseCountdown();
   // Select the active slide thumb so Resume is immediately available
   if (state.selectedDesign?.id === state.activeDesignId) {
     selectPage(state.activePageIndex);
@@ -407,6 +416,7 @@ stopBtn.addEventListener('click', () => {
   state.activeDesignId = null;
   state.activePageIndex = null;
   currentlyDisp.classList.add('hidden');
+  clearCountdown();
   updateActiveOverlay();
   updateControlBtns();
 });
@@ -498,11 +508,54 @@ function showConfirmFlash() {
   setTimeout(() => confirmFlash.classList.add('hidden'), 2500);
 }
 
+// ─── Countdown ────────────────────────────────────────────────────────────────
+
+function startCountdown(seconds) {
+  clearCountdown();
+  state.countdownRemaining = seconds;
+  countdownDisplay.classList.remove('hidden');
+  renderCountdown();
+  state.countdownInterval = setInterval(() => {
+    if (state.countdownRemaining > 0) state.countdownRemaining--;
+    renderCountdown();
+  }, 1000);
+}
+
+function pauseCountdown() {
+  clearInterval(state.countdownInterval);
+  state.countdownInterval = null;
+}
+
+function resumeCountdown() {
+  if (state.countdownInterval) return; // already running
+  state.countdownInterval = setInterval(() => {
+    if (state.countdownRemaining > 0) state.countdownRemaining--;
+    renderCountdown();
+  }, 1000);
+}
+
+function clearCountdown() {
+  clearInterval(state.countdownInterval);
+  state.countdownInterval = null;
+  state.countdownRemaining = 0;
+  countdownDisplay.classList.add('hidden');
+}
+
+function renderCountdown() {
+  const m = Math.floor(state.countdownRemaining / 60);
+  const s = state.countdownRemaining % 60;
+  countdownDisplay.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 // ─── Auto-advance controls ────────────────────────────────────────────────────
 
 autoAdvanceToggle.addEventListener('change', () => {
   state.autoAdvance = autoAdvanceToggle.checked;
-  durationRow.classList.toggle('hidden', !state.autoAdvance);
+  slideDurationSelect.disabled = !state.autoAdvance;
+  if (!state.autoAdvance) {
+    slideDurationCustom.classList.add('hidden');
+    clearCountdown();
+  }
 });
 
 slideDurationSelect.addEventListener('change', () => {
