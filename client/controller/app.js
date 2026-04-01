@@ -472,17 +472,18 @@ stopBtn.addEventListener('click', () => {
 // ─── Embed URL setup ──────────────────────────────────────────────────────────
 
 function renderEmbedStatus(design) {
-  const name = design.title ?? 'Untitled';
   if (design.embedUrl) {
-    embedMsg.textContent = `"${name}" — embed ready`;
+    embedMsg.textContent = 'Slideshow Verified';
     embedMsg.className = 'embed-msg configured';
+    embedMsg.classList.remove('hidden');
     setEmbedBtn.textContent = 're-link';
     setEmbedBtn.className = 'btn btn--relink';
+    slideNavLabel.classList.add('slide-nav-label--ready');
   } else {
-    embedMsg.textContent = `"${name}" — no embed URL`;
-    embedMsg.className = 'embed-msg missing';
+    embedMsg.classList.add('hidden');
     setEmbedBtn.textContent = 'Set embed URL';
     setEmbedBtn.className = 'btn btn--secondary btn--sm';
+    slideNavLabel.classList.remove('slide-nav-label--ready');
   }
 }
 

@@ -276,19 +276,9 @@ html, body {
   text-align: center;
 }
 
-.btn--nav {
-  background: #2a2a2a;
-  color: #ccc;
-  padding: 0;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
+.slide-nav-label--ready { color: #eee; }
 
-.btn--nav:hover:not(:disabled) { background: #3d3d3d; }
+.btn--nav { display: none; }
 
 .slide-thumb {
   display: flex;
@@ -558,7 +548,6 @@ html, body {
 }
 
 .embed-msg.configured { color: #4caf50; }
-.embed-msg.missing    { color: #f0a030; }
 
 .btn--relink {
   background: none;
