@@ -552,6 +552,11 @@ function renderCountdown() {
 autoAdvanceToggle.addEventListener('change', () => {
   state.autoAdvance = autoAdvanceToggle.checked;
   slideDurationSelect.disabled = !state.autoAdvance;
+  if (state.autoAdvance && !slideDurationSelect.value) {
+    slideDurationSelect.value = '30';
+    slideDurationSelect.classList.add('has-value');
+    state.slideDuration = 30;
+  }
   if (!state.autoAdvance) {
     slideDurationCustom.classList.add('hidden');
     clearCountdown();
