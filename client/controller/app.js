@@ -35,9 +35,10 @@ const panelTitle      = document.getElementById('panel-title');
 const embedSection    = document.getElementById('embed-section');
 const embedMsg        = document.getElementById('embed-msg');
 const setEmbedBtn     = document.getElementById('set-embed-btn');
-const autoAdvanceToggle = document.getElementById('auto-advance-toggle');
-const durationRow       = document.getElementById('duration-row');
-const slideDurationInput = document.getElementById('slide-duration');
+const autoAdvanceToggle    = document.getElementById('auto-advance-toggle');
+const durationRow          = document.getElementById('duration-row');
+const slideDurationSelect  = document.getElementById('slide-duration-select');
+const slideDurationCustom  = document.getElementById('slide-duration-custom');
 const embedModal      = document.getElementById('embed-modal');
 const embedInput      = document.getElementById('embed-input');
 const embedSaveBtn    = document.getElementById('embed-save-btn');
@@ -504,11 +505,37 @@ autoAdvanceToggle.addEventListener('change', () => {
   durationRow.classList.toggle('hidden', !state.autoAdvance);
 });
 
-slideDurationInput.addEventListener('change', () => {
-  const val = parseInt(slideDurationInput.value, 10);
-  state.slideDuration = isNaN(val) || val < 1 ? 5 : Math.min(val, 120);
-  slideDurationInput.value = state.slideDuration;
+slideDurationSelect.addEventListener('change', () => {
+  const val = slideDurationSelect.value;
+  slideDurationSelect.classList.add('has-value');
+
+  if (val === 'custom') {
+    slideDurationCustom.classList.remove('hidden');
+    slideDurationCustom.value = '';
+    slideDurationCustom.focus();
+  } else {
+    slideDurationCustom.classList.add('hidden');
+    state.slideDuration = parseInt(val, 10);
+  }
 });
+
+slideDurationCustom.addEventListener('change', () => {
+  const parsed = parseMMSS(slideDurationCustom.value);
+  if (parsed && parsed > 0) {
+    state.slideDuration = parsed;
+  } else {
+    slideDurationCustom.value = '';
+  }
+});
+
+function parseMMSS(str) {
+  const match = str.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const mins = parseInt(match[1], 10);
+  const secs = parseInt(match[2], 10);
+  if (secs >= 60) return null;
+  return mins * 60 + secs;
+}
 
 // ─── Load more / Refresh ──────────────────────────────────────────────────────
 

@@ -422,8 +422,37 @@ html, body {
   color: #aaa;
 }
 
+.duration-select {
+  padding: 6px 8px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  min-height: 36px;
+  cursor: pointer;
+  /* placeholder state — italic gray until a value is chosen */
+  color: #666;
+  font-style: italic;
+}
+
+.duration-select.has-value {
+  color: #eee;
+  font-style: normal;
+}
+
+.duration-select option {
+  background: #1e1e1e;
+  color: #eee;
+  font-style: normal;
+}
+
+.duration-select option:disabled {
+  color: #555;
+  font-style: italic;
+}
+
 .duration-input {
-  width: 58px;
+  width: 72px;
   padding: 6px 8px;
   background: #111;
   border: 1px solid #333;

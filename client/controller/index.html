@@ -67,11 +67,20 @@
         <div class="auto-advance-row">
           <label class="toggle-label">
             <input type="checkbox" id="auto-advance-toggle">
-            <span>Auto-advance</span>
+            <span>Auto-advance slide show every</span>
           </label>
           <div id="duration-row" class="duration-row hidden">
-            <input type="number" id="slide-duration" class="duration-input" value="5" min="1" max="120">
-            <span class="duration-unit">sec / slide</span>
+            <select id="slide-duration-select" class="duration-select">
+              <option value="" disabled selected>Delay Time (MM:SS)</option>
+              <option value="30">00:30</option>
+              <option value="60">01:00</option>
+              <option value="180">03:00</option>
+              <option value="300">05:00</option>
+              <option value="600">10:00</option>
+              <option value="custom">Custom (MM:SS)</option>
+            </select>
+            <input type="text" id="slide-duration-custom" class="duration-input hidden" placeholder="MM:SS" maxlength="5">
+            <span class="duration-unit">/slide</span>
           </div>
         </div>
 
