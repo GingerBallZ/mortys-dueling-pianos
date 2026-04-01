@@ -300,41 +300,39 @@ http://127.0.0.1:3000/auth/callback
 - [x] Embed status indicator (green/orange dot) on design cards
 - [x] Correct slide navigation via two-step embed load + fragment navigation
 - [x] Slide animations working
-- [x] Auto-advance mode with configurable duration
+- [x] Auto-advance mode with configurable duration (dropdown presets + custom MM:SS + countdown clock)
+- [x] Scrollbar styling on design grid and slide panel (visible + hover state)
+- [x] Slide nav label above thumbnail grid ("SELECT A SLIDE..." / "SLIDE X OF Y")
+- [x] Embed status shows "Slideshow Verified" + subtle re-link affordance once configured
+- [x] Embed status label tied to selected design name (shown in panel title)
+- [x] Server validates pasted embed URL belongs to the selected design (wrong-design paste rejected with error)
+- [x] Pause selects active slide thumb; Resume resumes from active slide
+- [x] Active slide overlay tracks auto-advance via SLIDE_ADVANCED message
+- [x] Prev/Next slide nav arrows (JS implemented, HTML commented out pending UX decision)
 
 ---
 
 ## Known Issues
 
-### Canva UI bar visible on display (in progress)
-- **Status:** In progress — last attempted fix not yet tested
-- **Background:** The working URL format `view?embed#N` causes Canva's hash router to ignore `?embed`, showing the navigation UI bar at the bottom
-- **Current approach:** Two-step load: `frame.src = view?embed` (full load, embed mode), then `frame.contentWindow.location.href = view?embed#N` (fragment navigation, should preserve embed mode)
-- **Expected outcome:** If the browser treats the second navigation as a fragment change (not a full reload), embed mode state is preserved and no UI shows
-- **Fallback if it fails:** Consider a CSS overlay covering the bottom ~60px of the display
+### Canva UI bar hidden via CSS offset
+- **Status:** Fixed — `top: -75px` / `height: calc(100% + 150px)` on `.slide-frame`
+- **Rule:** Only change `top` to shift content up/down; only change `height` to push UI bar below viewport. Do not change both simultaneously.
 
 ### Auto-advance occasionally unreliable
-- **Status:** Likely fixed — timer no longer depends on iframe `load` event (which doesn't fire for fragment navigations)
-- **Previous bug:** Timer waited for `load` event; hash navigations don't fire `load`, so timer never started for slide 3+
+- **Status:** Fixed — timer no longer depends on iframe `load` event
 
 ---
 
 ## Backlog
 
 ### UI / Controller
-- [ ] Forward and Back nav arrows in the controller to advance or return to the next/previous slide without tapping individual slide buttons
-- [ ] Change scrollbar color to be more visible against dark background
-- [ ] Replace auto-advance duration text input with a dropdown of preset values plus a "custom" option; label reads "Auto-advance slide show every [dropdown] sec/slide"
-- [ ] Add brief instruction text above the thumbnail grid (e.g. "Select a slide, then tap Go Live")
-- [ ] Once a design's embed URL is configured, hide the "Set Embed URL" button — only show it again if the user explicitly needs to re-link (e.g. a small "re-link" affordance instead of a persistent "Change" button)
-- [ ] Tie the embed URL status indicator and setup button label to the specific slide show name so it's clear which design is being configured
-- [ ] Investigate auto-populating the embed URL for a selected design (e.g. via Canva API or a stored association), reducing manual paste steps
+- [ ] Re-enable Forward/Back nav arrows (JS already written, just uncomment HTML buttons and their DOM refs/listeners in app.js)
+- [ ] Auto-populate embed URL — investigated; not feasible. Canva's page is SPA-rendered and requires browser session cookies. View token not exposed via Connect API. Manual paste flow is the only option.
 
 ### Display / Show Control
-- [ ] "End Show" button on controller: loads the "Waiting for controller..." screen on the display and exits fullscreen
 - [ ] On "Go Live": enter fullscreen on the display device and hide the browser navigation bar
 - [ ] On "Go Live": prevent display device screensaver / auto-screen-off from activating
-- [ ] On "End Show": re-enable screensaver / auto-screen-off
+- [ ] On "Stop": exit fullscreen and re-enable screensaver
 
 ### Future Enhancements
 - Slide pre-caching for zero-latency transitions
