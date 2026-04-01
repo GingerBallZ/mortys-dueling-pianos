@@ -390,10 +390,10 @@ html, body {
 /* ── Auto-advance row ── */
 .auto-advance-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  margin-bottom: -6px; /* equalises spacing above/below the duration row */
 }
 
 .toggle-label {
@@ -420,6 +420,7 @@ html, body {
   gap: 6px;
   font-size: 0.8rem;
   color: #aaa;
+  width: 100%;
 }
 
 .duration-select {
@@ -453,7 +454,6 @@ html, body {
 
 .duration-select option:disabled {
   color: #555;
-  font-style: italic;
 }
 
 .duration-input {
@@ -477,10 +477,11 @@ html, body {
   font-family: 'SF Mono', 'Menlo', monospace;
   font-size: 1rem;
   font-weight: 700;
-  color: #fff;
+  color: #e53935;
   letter-spacing: 0.05em;
   min-width: 44px;
   text-align: center;
+  margin-left: auto;
 }
 
 /* ── Embed URL section (inside panel) ── */
