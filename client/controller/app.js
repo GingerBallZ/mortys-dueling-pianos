@@ -573,21 +573,53 @@ slideDurationSelect.addEventListener('change', () => {
 });
 
 slideDurationCustom.addEventListener('change', () => {
-  const parsed = parseMMSS(slideDurationCustom.value);
-  if (parsed && parsed > 0) {
-    state.slideDuration = parsed;
+  const result = applyCustomDuration(slideDurationCustom.value);
+  if (result) {
+    state.slideDuration = result.seconds;
+    slideDurationCustom.value = result.formatted;
   } else {
     slideDurationCustom.value = '';
   }
 });
 
-function parseMMSS(str) {
-  const match = str.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-  const mins = parseInt(match[1], 10);
-  const secs = parseInt(match[2], 10);
-  if (secs >= 60) return null;
-  return mins * 60 + secs;
+// Parses a custom duration entry into { seconds, formatted }.
+// Accepts 1–4 raw digits (padded from the right to MM:SS) or a colon
+// format like "12:34". Returns null if the value contains non-numerals,
+// is zero, or exceeds 6000 (i.e. greater than 60:00).
+function applyCustomDuration(raw) {
+  const val = raw.trim();
+  if (!val) return null;
+
+  let mins, secs, rawInt;
+
+  if (/^(\d{1,2}):(\d{2})$/.test(val)) {
+    // Already formatted as MM:SS
+    const [m, s] = val.split(':').map(Number);
+    rawInt = parseInt(String(m).padStart(2, '0') + String(s).padStart(2, '0'), 10);
+    mins = m; secs = s;
+  } else if (/^\d{1,4}$/.test(val)) {
+    // 1–4 raw digits — pad from the right
+    rawInt = parseInt(val, 10);
+    const padded = val.padStart(4, '0');
+    mins = parseInt(padded.slice(0, 2), 10);
+    secs = parseInt(padded.slice(2), 10);
+  } else {
+    return null; // non-numeral or > 4 digits
+  }
+
+  if (rawInt > 6000) return null;
+
+  // Normalise seconds overflow (e.g. 00:90 → 01:30)
+  mins += Math.floor(secs / 60);
+  secs = secs % 60;
+
+  const seconds = mins * 60 + secs;
+  if (seconds <= 0) return null;
+
+  return {
+    seconds,
+    formatted: `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`,
+  };
 }
 
 // ─── Load more / Refresh ──────────────────────────────────────────────────────
