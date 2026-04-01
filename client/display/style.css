@@ -21,8 +21,8 @@ html, body {
    no Canva UI visible.
    If the slide appears shifted, adjust top and height in tandem
    (increase top offset → increase height by the same amount).
-   pointer-events: none prevents the Fire TV remote from accidentally
-   advancing slides. */
+   pointer-events: none prevents accidental mouse/keyboard interaction
+   from advancing slides on the display computer. */
 .slide-frame {
   position: fixed;
   top: -75px;
