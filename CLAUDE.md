@@ -268,7 +268,9 @@ http://127.0.0.1:3000/auth/callback
 - Auto-deploys on push to `main`
 - Controller: `/controller` — Display: `/display`
 - `.tokens.json` and `.embed-tokens.json` are server-side data files (gitignored, persist on Railway volume)
-- Fire TV and iPad must be on the same network as the server, or server must be internet-hosted
+- Display runs in a desktop browser on a laptop connected to the stage TV via HDMI
+- Launch display in Chrome kiosk mode for cleanest experience: `google-chrome --kiosk https://mortys-dueling-pianos-production.up.railway.app/display`
+- Controller runs on iPad; server is internet-hosted so no local network dependency
 
 ---
 
@@ -291,7 +293,7 @@ http://127.0.0.1:3000/auth/callback
 - [x] WebSocket: controller sends SHOW_SLIDE → display renders it
 - [x] "Go Live" button with confirmation feedback
 - [x] Token auto-refresh
-- [x] Fire TV full-screen mode (triggered on WebSocket connect)
+- [x] Display fullscreen on click prompt ("CLICK TO BEGIN") — hides browser UI
 - [x] Slide buttons scrollable when design has many pages
 - [x] Currently-displaying indicator on controller
 - [x] Deployed to Railway
@@ -330,12 +332,9 @@ http://127.0.0.1:3000/auth/callback
 - [ ] Auto-populate embed URL — investigated; not feasible. Canva's page is SPA-rendered and requires browser session cookies. View token not exposed via Connect API. Manual paste flow is the only option.
 
 ### Display / Show Control
-- [ ] On "Go Live": enter fullscreen on the display device and hide the browser navigation bar
-- [ ] On "Go Live": prevent display device screensaver / auto-screen-off from activating
-- [ ] On "Stop": exit fullscreen and re-enable screensaver
+- [ ] Slide pre-caching — load slide N+1 in hidden iframe while N is showing (identified as impactful for cross-design transitions; tabled pending further testing)
 
 ### Future Enhancements
-- Slide pre-caching for zero-latency transitions
 - Set list integration (map songs to specific slides)
 - Multiple display support (IMAG screens, confidence monitors)
 - Offline mode with pre-downloaded slide cache
