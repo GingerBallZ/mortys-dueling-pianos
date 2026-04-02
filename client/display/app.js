@@ -2,6 +2,7 @@
 
 const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
+const slideCover = document.getElementById('slide-cover');
 const fsPrompt = document.getElementById('fs-prompt');
 
 // Auto-hide cursor after 3 seconds of inactivity — only active once fullscreen is entered
@@ -26,15 +27,16 @@ function showSlide(embedUrl, pageIndex, pageCount, autoAdvance, duration) {
 
   if (currentEmbedUrl !== embedUrl) {
     // New design — full page load to activate ?embed mode (suppresses Canva UI).
+    // Show black cover to hide slide-1 flash during load.
     currentEmbedUrl = embedUrl;
-    frame.src = embedUrl; // loads view?embed at slide 1
+    slideCover.classList.add('visible');
+    frame.src = embedUrl;
 
-    // After embed mode is active, navigate to the target slide via fragment.
-    // The browser treats this as a same-page hash navigation (no reload),
-    // so ?embed mode is preserved and the Canva UI stays hidden.
     frame.addEventListener('load', function () {
       navigateToSlide(pageIndex);
       scheduleAutoAdvance();
+      // Wait for Canva to process the fragment navigation before revealing
+      setTimeout(() => slideCover.classList.remove('visible'), 500);
     }, { once: true });
   } else {
     // Same design already in embed mode — fragment navigation preserves it.
@@ -186,8 +188,9 @@ function connect() {
       clearTimeout(autoAdvanceTimer);
       autoAdvanceTimer = null;
       currentSlide = null;
-      currentEmbedUrl = null;
-      frame.src = 'about:blank';
+      // Keep iframe and currentEmbedUrl intact — next Go Live on the same design
+      // will use fast fragment navigation instead of a full reload.
+      // #status has background: #000 so it covers the iframe visually.
       statusEl.textContent = 'Connected — waiting for slide...';
       statusEl.classList.remove('hidden');
       exitFullscreen();
