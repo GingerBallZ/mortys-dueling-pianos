@@ -4,13 +4,16 @@ const frame = document.getElementById('slide-frame');
 const statusEl = document.getElementById('status');
 const fsPrompt = document.getElementById('fs-prompt');
 
-// Auto-hide cursor after 3 seconds of inactivity
+// Auto-hide cursor after 3 seconds of inactivity — only active once fullscreen is entered
 let cursorTimer = null;
-document.addEventListener('mousemove', () => {
-  document.body.style.cursor = '';
-  clearTimeout(cursorTimer);
-  cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
-});
+
+function enableCursorAutoHide() {
+  document.addEventListener('mousemove', () => {
+    document.body.style.cursor = '';
+    clearTimeout(cursorTimer);
+    cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
+  });
+}
 
 let autoAdvanceTimer = null;
 let currentSlide = null;
@@ -78,6 +81,7 @@ function scheduleAutoAdvance() {
 function dismissPrompt() {
   fsPrompt.classList.add('hidden');
   enterFullscreen();
+  enableCursorAutoHide();
 }
 
 ['click', 'keydown', 'touchstart'].forEach(evt =>
