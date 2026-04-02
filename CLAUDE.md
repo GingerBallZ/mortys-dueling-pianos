@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-A real-time web application for live stage performances. A **TV Display** (running on Amazon Fire TV via Silk browser) shows full-screen Canva slides on stage. A **Controller Interface** (running on an iPad) allows a sound tech to browse designs from a Canva account and push slides to the display on command.
+A real-time web application for live stage performances. A **TV Display** (running in a desktop browser on a laptop connected to the stage TV via HDMI) shows full-screen Canva slides on stage. A **Controller Interface** (running on an iPad) allows a sound tech to browse designs from a Canva account and push slides to the display on command.
 
 No native apps. No app store. Just two browser tabs that stay in sync over a WebSocket connection.
 
@@ -18,7 +18,7 @@ No native apps. No app store. Just two browser tabs that stay in sync over a Web
 ## Architecture
 
 ```
-[iPad Controller UI]  ──WebSocket──  [Node.js Server]  ──WebSocket──  [Fire TV Display UI]
+[iPad Controller UI]  ──WebSocket──  [Node.js Server]  ──WebSocket──  [Laptop Display UI → HDMI → Stage TV]
         │                                    │
         └── Canva Connect API (OAuth) ───────┘
 ```
@@ -27,7 +27,7 @@ No native apps. No app store. Just two browser tabs that stay in sync over a Web
 
 1. **`/server`** — Node.js + Express + WebSocket server. Handles Canva OAuth, serves both UIs, and relays slide commands between clients.
 2. **`/client/controller`** — iPad-optimized web UI. Browse Canva designs, preview thumbnails, push a slide to the display.
-3. **`/client/display`** — Fire TV / TV-optimized web UI. Full-screen, no controls. Renders whatever it's told to show.
+3. **`/client/display`** — TV display web UI. Full-screen, no controls. Renders whatever it's told to show.
 
 ---
 
@@ -55,7 +55,7 @@ No native apps. No app store. Just two browser tabs that stay in sync over a Web
 
 ### Live Show
 1. Sound tech opens `yourapp.com/controller` on iPad
-2. Fire TV operator (or auto-launch) opens `yourapp.com/display` on Fire TV Silk browser
+2. Display operator opens `yourapp.com/display` on the laptop connected to the stage TV via HDMI; clicks to enter fullscreen
 3. Controller shows a grid of Canva design thumbnails (green dot = embed URL configured)
 4. Sound tech taps a design → selects a slide → previews it as PNG in the sidebar
 5. (Optional) Enable Auto-advance and set seconds-per-slide
@@ -133,7 +133,7 @@ The display uses a two-step strategy to get both embed mode (no UI) and the corr
 ### Per-design embed token setup
 - Stored in `.embed-tokens.json` as `{ designId: viewToken }` map (gitignored)
 - Server merges stored tokens into `GET /api/designs` response as `embedUrl` field
-- Controller shows green/orange dot on each design card indicating token status
+- Controller shows green/grey dot on each design card indicating token status
 - `POST /api/designs/:designId/embed-token` — accepts paste of embed URL or iframe HTML, extracts and stores token
 
 ---
@@ -192,8 +192,8 @@ All messages are JSON over WebSocket.
 │   │   ├── style.css
 │   │   └── app.js              # Design browser, slide selector, embed URL setup, WebSocket client
 │   └── display/
-│       ├── index.html          # Fire TV display UI (full-screen)
-│       ├── style.css           # Black background, no cursor, pointer-events none on iframe
+│       ├── index.html          # TV display UI (full-screen, desktop browser via HDMI)
+│       ├── style.css           # Black background, cursor auto-hides, pointer-events none on iframe
 │       └── app.js              # WebSocket client, two-step embed load, auto-advance logic
 └── README.md
 ```
@@ -213,14 +213,14 @@ NODE_ENV=production
 
 ---
 
-## Fire TV / Silk Browser Constraints
+## Display Browser Requirements
 
-- Target screen resolution: **1920×1080**
-- Silk browser supports: ES6+, WebSockets, CSS Flexbox/Grid, full-screen API
-- Avoid: heavy JS frameworks, Web Workers
-- Use `document.documentElement.requestFullscreen()` on first user interaction (WebSocket open)
-- Display page: no UI chrome, no cursor (`cursor: none`), black background
-- `pointer-events: none` on iframe — prevents Fire TV remote from advancing slides accidentally
+- Target screen resolution: **1920×1080** (laptop output via HDMI)
+- Use Chrome in kiosk mode for cleanest experience (see Deployment Notes)
+- Display page: black background, cursor auto-hides after 3s of inactivity
+- `pointer-events: none` on iframe — prevents accidental mouse interaction from advancing slides
+- Wake Lock API prevents screensaver during a show; released on Stop
+- Fullscreen triggered on first click ("CLICK TO BEGIN" prompt); re-entered on each SHOW_SLIDE
 - Display renders Canva slides via iframe using two-step embed approach (see above)
 - Controller preview uses static PNG exports only
 
