@@ -311,6 +311,11 @@ http://127.0.0.1:3000/auth/callback
 - [x] Pause selects active slide thumb; Resume resumes from active slide
 - [x] Active slide overlay tracks auto-advance via SLIDE_ADVANCED message
 - [x] Prev/Next slide nav arrows (JS implemented, HTML commented out pending UX decision)
+- [x] Black cover div hides slide-1 flash during new-design iframe load
+- [x] Stop keeps iframe warm — next Go Live on same design uses fragment navigation (no reload flash)
+- [x] Display cursor visible on prompt screen; auto-hides after 3s once fullscreen is entered
+- [x] Wake lock prevents screensaver during show; released on Stop
+- [x] `/auth/whoami` endpoint returns Canva user_id for test-user setup
 
 ---
 
@@ -322,6 +327,9 @@ http://127.0.0.1:3000/auth/callback
 
 ### Auto-advance occasionally unreliable
 - **Status:** Fixed — timer no longer depends on iframe `load` event
+
+### Slide N-1 briefly visible when jumping to slide N
+- **Status:** Known limitation — Canva's built-in transition animation plays the exit of slide N-1 when entering slide N via hash navigation. Not fixable from our side without suppressing all transition animations.
 
 ---
 
