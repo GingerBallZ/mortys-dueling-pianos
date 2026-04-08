@@ -252,12 +252,16 @@ function selectPage(pageIndex) {
 
 // ─── Slide thumbnails ─────────────────────────────────────────────────────────
 
+const THUMB_CONCURRENCY = 3; // max parallel export requests
+
 function loadSlideThumbnails(design) {
   const gen = ++state.thumbGeneration;
   const pageCount = design.page_count ?? 1;
   const cache = state.thumbCache[design.id] ?? {};
   pageButtons.innerHTML = '';
 
+  // Build all thumb elements immediately so the grid populates
+  const pending = []; // { pageIndex, imgEl }
   for (let i = 0; i < pageCount; i++) {
     const thumb = buildSlideThumb(i);
     pageButtons.appendChild(thumb);
@@ -265,11 +269,42 @@ function loadSlideThumbnails(design) {
     if (cache[i]) {
       imgEl.src = cache[i];
     } else {
-      loadThumbnail(design.id, i, imgEl, gen);
+      pending.push({ pageIndex: i, imgEl });
     }
   }
 
   updateActiveOverlay();
+
+  if (pending.length > 0) {
+    runThumbQueue(design.id, pending, gen);
+  }
+}
+
+// Runs pending thumbnail loads with limited concurrency, then retries any
+// that failed once the initial pass is complete.
+async function runThumbQueue(designId, pending, gen) {
+  const failed = [];
+  let idx = 0;
+
+  async function worker() {
+    while (idx < pending.length) {
+      if (state.thumbGeneration !== gen) return;
+      const item = pending[idx++];
+      const ok = await loadThumbnail(designId, item.pageIndex, item.imgEl, gen);
+      if (!ok && state.thumbGeneration === gen) failed.push(item);
+    }
+  }
+
+  // First pass — up to THUMB_CONCURRENCY parallel workers
+  const workers = [];
+  for (let w = 0; w < THUMB_CONCURRENCY; w++) workers.push(worker());
+  await Promise.all(workers);
+
+  // Retry pass — any slide that failed gets one more attempt, sequentially
+  for (const item of failed) {
+    if (state.thumbGeneration !== gen) return;
+    await loadThumbnail(designId, item.pageIndex, item.imgEl, gen);
+  }
 }
 
 function buildSlideThumb(pageIndex) {
@@ -286,6 +321,7 @@ function buildSlideThumb(pageIndex) {
   return div;
 }
 
+// Returns true if the thumbnail loaded successfully, false otherwise.
 async function loadThumbnail(designId, pageIndex, imgEl, gen) {
   try {
     const res = await fetch(`/api/designs/${designId}/export`, {
@@ -294,27 +330,28 @@ async function loadThumbnail(designId, pageIndex, imgEl, gen) {
       body: JSON.stringify({ pageIndex }),
     });
     const data = await res.json();
-    if (data.error || !data.job?.id) return;
+    if (data.error || !data.job?.id) return false;
 
     const exportId = data.job.id;
     for (let attempt = 0; attempt < 20; attempt++) {
       await new Promise(r => setTimeout(r, 1500));
-      if (state.thumbGeneration !== gen) return; // design changed, abandon
+      if (state.thumbGeneration !== gen) return false; // design changed, abandon
       const pollRes = await fetch(`/api/designs/exports/${exportId}`);
       const pollData = await pollRes.json();
       const job = pollData.job;
       if (job?.status === 'success') {
-        if (state.thumbGeneration !== gen) return;
+        if (state.thumbGeneration !== gen) return false;
         const url = job.urls[0];
         if (!state.thumbCache[designId]) state.thumbCache[designId] = {};
         state.thumbCache[designId][pageIndex] = url;
         imgEl.src = url;
-        return;
+        return true;
       }
-      if (job?.status === 'failed') return;
+      if (job?.status === 'failed') return false;
     }
+    return false;
   } catch {
-    // silent fail — placeholder stays
+    return false;
   }
 }
 
@@ -340,9 +377,13 @@ function updateControlBtns() {
 
   goLiveBtn.textContent = isResume ? 'Resume' : 'Go Live';
 
+  const customDurationMissing = state.autoAdvance
+    && slideDurationSelect.value === 'custom'
+    && state.slideDuration <= 0;
+
   goLiveBtn.disabled = isResume
     ? !state.wsConnected
-    : state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.wsConnected;
+    : state.selectedPageIndex === null || !state.selectedDesign?.embedUrl || !state.wsConnected || customDurationMissing;
 
   pauseBtn.disabled = !state.showActive || state.showPaused || !state.wsConnected;
   stopBtn.disabled  = !state.showActive || !state.wsConnected;
@@ -593,6 +634,44 @@ function renderCountdown() {
 
 // ─── Auto-advance controls ────────────────────────────────────────────────────
 
+// Digit buffer for the right-to-left MM:SS input.
+// Holds exactly 4 digits [m1, m2, s1, s2]; new digits shift in from the right.
+let digitBuffer = [0, 0, 0, 0];
+
+function digitBufferToDisplay() {
+  return `${digitBuffer[0]}${digitBuffer[1]}:${digitBuffer[2]}${digitBuffer[3]}`;
+}
+
+function digitBufferToSeconds() {
+  const mins = digitBuffer[0] * 10 + digitBuffer[1];
+  const secs = digitBuffer[2] * 10 + digitBuffer[3];
+  return mins * 60 + secs;
+}
+
+function resetDigitBuffer() {
+  digitBuffer = [0, 0, 0, 0];
+  slideDurationCustom.value = '00:00';
+}
+
+function commitDigitBuffer() {
+  // Normalise seconds overflow (e.g. typing 0073 → 00:73 → 01:13)
+  let mins = digitBuffer[0] * 10 + digitBuffer[1];
+  let secs = digitBuffer[2] * 10 + digitBuffer[3];
+  mins += Math.floor(secs / 60);
+  secs = secs % 60;
+  // Clamp to 60:00
+  if (mins > 60 || (mins === 60 && secs > 0)) { mins = 60; secs = 0; }
+  digitBuffer = [
+    Math.floor(mins / 10), mins % 10,
+    Math.floor(secs / 10), secs % 10,
+  ];
+  const formatted = digitBufferToDisplay();
+  slideDurationCustom.value = formatted;
+  const seconds = digitBufferToSeconds();
+  state.slideDuration = seconds > 0 ? seconds : 0;
+  updateGoLiveBtn();
+}
+
 autoAdvanceToggle.addEventListener('change', () => {
   state.autoAdvance = autoAdvanceToggle.checked;
   slideDurationSelect.disabled = !state.autoAdvance;
@@ -605,6 +684,7 @@ autoAdvanceToggle.addEventListener('change', () => {
     slideDurationCustom.classList.add('hidden');
     clearCountdown();
   }
+  updateGoLiveBtn();
 });
 
 slideDurationSelect.addEventListener('change', () => {
@@ -612,64 +692,86 @@ slideDurationSelect.addEventListener('change', () => {
   slideDurationSelect.classList.add('has-value');
 
   if (val === 'custom') {
+    resetDigitBuffer();
+    state.slideDuration = 0;
     slideDurationCustom.classList.remove('hidden');
-    slideDurationCustom.value = '';
-    slideDurationCustom.focus();
+    updateGoLiveBtn();
+    // Delay focus slightly so iOS recognises the gesture chain
+    setTimeout(() => slideDurationCustom.focus(), 50);
   } else {
     slideDurationCustom.classList.add('hidden');
     state.slideDuration = parseInt(val, 10);
+    updateGoLiveBtn();
   }
 });
 
-slideDurationCustom.addEventListener('change', () => {
-  const result = applyCustomDuration(slideDurationCustom.value);
-  if (result) {
-    state.slideDuration = result.seconds;
-    slideDurationCustom.value = result.formatted;
-  } else {
-    slideDurationCustom.value = '';
+// Right-to-left digit entry — intercept all keyboard input ourselves.
+// keydown handles physical keyboards and most Android virtual keyboards.
+slideDurationCustom.addEventListener('keydown', (e) => {
+  if (e.key >= '0' && e.key <= '9') {
+    e.preventDefault();
+    digitBuffer.shift();
+    digitBuffer.push(parseInt(e.key, 10));
+    slideDurationCustom.value = digitBufferToDisplay();
+    state.slideDuration = digitBufferToSeconds();
+    updateGoLiveBtn();
+  } else if (e.key === 'Backspace' || e.key === 'Delete') {
+    e.preventDefault();
+    digitBuffer.pop();
+    digitBuffer.unshift(0);
+    slideDurationCustom.value = digitBufferToDisplay();
+    state.slideDuration = digitBufferToSeconds();
+    updateGoLiveBtn();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    commitDigitBuffer();
+    slideDurationCustom.blur();
+  } else if (e.key !== 'Tab') {
+    // Block all other keys (letters, symbols, etc.) except Tab
+    e.preventDefault();
   }
 });
 
-// Parses a custom duration entry into { seconds, formatted }.
-// Accepts 1–4 raw digits (padded from the right to MM:SS) or a colon
-// format like "12:34". Returns null if the value contains non-numerals,
-// is zero, or exceeds 6000 (i.e. greater than 60:00).
-function applyCustomDuration(raw) {
-  const val = raw.trim();
-  if (!val) return null;
-
-  let mins, secs, rawInt;
-
-  if (/^(\d{1,2}):(\d{2})$/.test(val)) {
-    // Already formatted as MM:SS
-    const [m, s] = val.split(':').map(Number);
-    rawInt = parseInt(String(m).padStart(2, '0') + String(s).padStart(2, '0'), 10);
-    mins = m; secs = s;
-  } else if (/^\d{1,4}$/.test(val)) {
-    // 1–4 raw digits — pad from the right
-    rawInt = parseInt(val, 10);
-    const padded = val.padStart(4, '0');
-    mins = parseInt(padded.slice(0, 2), 10);
-    secs = parseInt(padded.slice(2), 10);
-  } else {
-    return null; // non-numeral or > 4 digits
+// iOS Safari virtual keyboard fires 'input' events rather than keydown for
+// digit keys. We read whatever the browser inserted, strip non-digits, feed
+// each digit through the buffer, then restore our controlled display value.
+slideDurationCustom.addEventListener('input', () => {
+  const raw = slideDurationCustom.value.replace(/\D/g, '');
+  // Restore display immediately so the browser doesn't show raw characters
+  slideDurationCustom.value = digitBufferToDisplay();
+  for (const ch of raw) {
+    if (ch >= '0' && ch <= '9') {
+      digitBuffer.shift();
+      digitBuffer.push(parseInt(ch, 10));
+    }
   }
+  slideDurationCustom.value = digitBufferToDisplay();
+  state.slideDuration = digitBufferToSeconds();
+  updateGoLiveBtn();
+});
 
-  if (rawInt > 6000) return null;
+// Normalise on blur (handles seconds overflow)
+slideDurationCustom.addEventListener('blur', () => {
+  commitDigitBuffer();
+});
 
-  // Normalise seconds overflow (e.g. 00:90 → 01:30)
-  mins += Math.floor(secs / 60);
-  secs = secs % 60;
+// iOS Safari: ensure tapping the input always opens the keyboard, even after
+// a prior programmatic blur. touchstart → explicit focus() re-arms it.
+slideDurationCustom.addEventListener('touchstart', (e) => {
+  e.preventDefault(); // prevent ghost click / double-fire
+  slideDurationCustom.focus();
+}, { passive: false });
 
-  const seconds = mins * 60 + secs;
-  if (seconds <= 0) return null;
-
-  return {
-    seconds,
-    formatted: `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`,
-  };
-}
+// Dismiss keyboard when tapping outside the custom input on touch devices.
+document.addEventListener('touchstart', (e) => {
+  if (
+    !slideDurationCustom.classList.contains('hidden') &&
+    document.activeElement === slideDurationCustom &&
+    !slideDurationCustom.contains(e.target)
+  ) {
+    slideDurationCustom.blur();
+  }
+}, { passive: true });
 
 // ─── Load more / Refresh ──────────────────────────────────────────────────────
 
